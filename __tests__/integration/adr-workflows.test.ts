@@ -6,10 +6,11 @@ import { afterEach, describe, expect, it } from "vitest";
 import { runAdrScript } from "../../skills/adr/scripts/adr";
 
 const TEST_DATE = "2026-05-25";
+const DEFAULT_ADR_DIRECTORY = "doc/adr";
+const ALTERNATIVE_ADR_DIRECTORY = "architecture/decisions";
 const INITIAL_ADR_FILENAME = "0001-record-architecture-decisions.md";
 const INITIAL_ADR_LIST_ROW =
   "1\tAccepted\t0001-record-architecture-decisions.md\tRecord architecture decisions";
-const ALTERNATIVE_ADR_DIRECTORY = "architecture/decisions";
 const EXPECTED_INITIAL_ADR = `# 1. Record architecture decisions
 
 Date: ${TEST_DATE}
@@ -36,12 +37,13 @@ interface DefaultAdrCase {
   readonly filename: string;
 }
 
+const USE_POSTGRESQL_ADR = {
+  number: 2,
+  title: "Use PostgreSQL",
+  filename: "0002-use-postgresql.md",
+} as const;
 const NEW_ADR_CASES = [
-  {
-    number: 2,
-    title: "Use PostgreSQL",
-    filename: "0002-use-postgresql.md",
-  },
+  USE_POSTGRESQL_ADR,
   {
     number: 3,
     title: "Use Redis for cache",
@@ -73,12 +75,19 @@ function makeTempRoot(): string {
   return root;
 }
 
-function adrPath(root: string, filename: string): string {
-  return path.join(root, "doc", "adr", filename);
+function adrPath(
+  root: string,
+  filename: string,
+  directory = DEFAULT_ADR_DIRECTORY,
+): string {
+  return path.join(root, directory, filename);
 }
 
-function initialAdrPath(root: string): string {
-  return adrPath(root, INITIAL_ADR_FILENAME);
+function initialAdrPath(
+  root: string,
+  directory = DEFAULT_ADR_DIRECTORY,
+): string {
+  return adrPath(root, INITIAL_ADR_FILENAME, directory);
 }
 
 function expectedDefaultAdr(number: number, title: string): string {
@@ -110,9 +119,10 @@ function expectedListRows(cases: readonly DefaultAdrCase[]): string[] {
 function expectDefaultAdrCreation(
   root: string,
   cases: readonly DefaultAdrCase[],
+  directory = DEFAULT_ADR_DIRECTORY,
 ): void {
   for (const { number, title, filename } of cases) {
-    const filePath = adrPath(root, filename);
+    const filePath = adrPath(root, filename, directory);
 
     expect(runScript(root, ["new", title])).toEqual({
       code: 0,
@@ -183,16 +193,7 @@ describe("ADR workflows", () => {
 
   it("creates records in an alternative ADR directory", () => {
     const root = makeTempRoot();
-    const initialPath = path.join(
-      root,
-      ALTERNATIVE_ADR_DIRECTORY,
-      INITIAL_ADR_FILENAME,
-    );
-    const createdPath = path.join(
-      root,
-      ALTERNATIVE_ADR_DIRECTORY,
-      "0002-use-postgresql.md",
-    );
+    const initialPath = initialAdrPath(root, ALTERNATIVE_ADR_DIRECTORY);
 
     expect(runScript(root, ["init", ALTERNATIVE_ADR_DIRECTORY])).toEqual({
       code: 0,
@@ -202,23 +203,17 @@ describe("ADR workflows", () => {
     expect(readFileSync(path.join(root, ".adr-dir"), "utf8")).toBe(
       `${ALTERNATIVE_ADR_DIRECTORY}\n`,
     );
-    expect(existsSync(path.join(root, "doc", "adr"))).toBe(false);
+    expect(existsSync(path.join(root, DEFAULT_ADR_DIRECTORY))).toBe(false);
     expect(readFileSync(initialPath, "utf8")).toBe(EXPECTED_INITIAL_ADR);
 
-    expect(runScript(root, ["new", "Use PostgreSQL"])).toEqual({
-      code: 0,
-      stdout: [createdPath],
-      stderr: [],
-    });
-    expect(readFileSync(createdPath, "utf8")).toBe(
-      expectedDefaultAdr(2, "Use PostgreSQL"),
+    expectDefaultAdrCreation(
+      root,
+      [USE_POSTGRESQL_ADR],
+      ALTERNATIVE_ADR_DIRECTORY,
     );
     expect(runScript(root, ["list"])).toEqual({
       code: 0,
-      stdout: [
-        INITIAL_ADR_LIST_ROW,
-        "2\tAccepted\t0002-use-postgresql.md\tUse PostgreSQL",
-      ],
+      stdout: expectedListRows([USE_POSTGRESQL_ADR]),
       stderr: [],
     });
   });
