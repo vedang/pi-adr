@@ -260,12 +260,47 @@ function expectedListRows(cases: readonly DefaultAdrCase[]): string[] {
   ];
 }
 
+interface GraphRelationshipCase {
+  readonly source: DefaultAdrCase;
+  readonly relationship: string;
+  readonly target: DefaultAdrCase;
+}
+
 function expectedTableOfContents(cases: readonly DefaultAdrCase[]): string {
   const lines = [INITIAL_ADR_CASE, ...cases].map(
     ({ filename, title }) => `* [${title}](${filename})`,
   );
 
   return `# Architecture Decision Records\n\n${lines.join("\n")}\n`;
+}
+
+function expectedGraph(
+  cases: readonly DefaultAdrCase[],
+  relationships: readonly GraphRelationshipCase[] = [],
+): string {
+  const records = [INITIAL_ADR_CASE, ...cases];
+  const lines = ["digraph {", "  node [shape=plaintext];"];
+
+  for (const { number, title, filename } of records) {
+    lines.push(
+      `  ${number} [label="${number}. ${title}", URL="${filename.replace(".md", ".html")}"];`,
+    );
+  }
+
+  for (let index = 0; index + 1 < records.length; index += 1) {
+    lines.push(
+      `  ${records[index].number} -> ${records[index + 1].number} [style=dotted, weight=1];`,
+    );
+  }
+
+  for (const { source, relationship, target } of relationships) {
+    lines.push(
+      `  ${source.number} -> ${target.number} [label="${relationship}", weight=0];`,
+    );
+  }
+
+  lines.push("}");
+  return `${lines.join("\n")}\n`;
 }
 
 function expectDefaultAdrCreation(
@@ -588,6 +623,36 @@ describe("ADR workflows", () => {
     expect(runScript(root, ["toc"])).toEqual({
       code: 0,
       stdout: [expectedTableOfContents(NEW_ADR_CASES)],
+      stderr: [],
+    });
+  });
+
+  it("generates a Graphviz graph for the ADR log", () => {
+    const root = createDefaultAdrWorkflow([USE_POSTGRESQL_ADR]);
+
+    expect(
+      runScript(root, [
+        "link",
+        String(USE_POSTGRESQL_ADR.number),
+        "Amends",
+        String(INITIAL_ADR_CASE.number),
+        "Amended by",
+      ]),
+    ).toMatchObject({ code: 0 });
+    expect(runScript(root, ["graph"])).toEqual({
+      code: 0,
+      stdout: [
+        expectedGraph(
+          [USE_POSTGRESQL_ADR],
+          [
+            {
+              source: USE_POSTGRESQL_ADR,
+              relationship: "Amends",
+              target: INITIAL_ADR_CASE,
+            },
+          ],
+        ),
+      ],
       stderr: [],
     });
   });
