@@ -192,6 +192,34 @@ function expectedAdrWithStatusLink(content: string, linkLine: string): string {
   );
 }
 
+function expectedStatusLink(
+  relationship: string,
+  targetAdr: DefaultAdrCase,
+): string {
+  return `${relationship} [${targetAdr.number}. ${targetAdr.title}](${targetAdr.filename})`;
+}
+
+function expectedDefaultAdrWithStatusLink(
+  sourceAdr: DefaultAdrCase,
+  relationship: string,
+  targetAdr: DefaultAdrCase,
+): string {
+  return expectedAdrWithStatusLink(
+    expectedDefaultAdr(sourceAdr.number, sourceAdr.title),
+    expectedStatusLink(relationship, targetAdr),
+  );
+}
+
+function expectedInitialAdrWithStatusLink(
+  relationship: string,
+  targetAdr: DefaultAdrCase,
+): string {
+  return expectedAdrWithStatusLink(
+    EXPECTED_INITIAL_ADR,
+    expectedStatusLink(relationship, targetAdr),
+  );
+}
+
 function expectedAdrSupersededBy(
   content: string,
   replacementAdr: DefaultAdrCase,
@@ -292,6 +320,31 @@ function expectAlternativeAdrDirectoryInitialized(root: string): void {
   );
   expect(existsSync(path.join(root, DEFAULT_ADR_DIRECTORY))).toBe(false);
   expect(readFileSync(initialPath, "utf8")).toBe(EXPECTED_INITIAL_ADR);
+}
+
+function expectPostgresqlAmendsInitial(root: string): void {
+  expect(readFileSync(adrPath(root, USE_POSTGRESQL_ADR.filename), "utf8")).toBe(
+    expectedDefaultAdrWithStatusLink(
+      USE_POSTGRESQL_ADR,
+      "Amends",
+      INITIAL_ADR_CASE,
+    ),
+  );
+  expect(readFileSync(initialAdrPath(root), "utf8")).toBe(
+    expectedInitialAdrWithStatusLink("Amended by", USE_POSTGRESQL_ADR),
+  );
+  expect(runScript(root, ["list"])).toEqual({
+    code: 0,
+    stdout: expectedListRows([USE_POSTGRESQL_ADR]),
+    stderr: [],
+  });
+  expect(runScript(root, ["validate"])).toEqual({
+    code: 0,
+    stdout: [
+      `ADR validation passed: ${path.join(root, DEFAULT_ADR_DIRECTORY)}`,
+    ],
+    stderr: [],
+  });
 }
 
 function runScript(
@@ -471,7 +524,6 @@ describe("ADR workflows", () => {
 
   it("links existing ADRs bidirectionally", () => {
     const root = makeTempRoot();
-    const adrDirectory = path.join(root, DEFAULT_ADR_DIRECTORY);
 
     expect(runScript(root, ["init"])).toMatchObject({ code: 0 });
     expectDefaultAdrCreation(root, [USE_POSTGRESQL_ADR]);
@@ -491,35 +543,11 @@ describe("ADR workflows", () => {
       ],
       stderr: [],
     });
-    expect(
-      readFileSync(adrPath(root, USE_POSTGRESQL_ADR.filename), "utf8"),
-    ).toBe(
-      expectedAdrWithStatusLink(
-        expectedDefaultAdr(USE_POSTGRESQL_ADR.number, USE_POSTGRESQL_ADR.title),
-        `Amends [${INITIAL_ADR_CASE.number}. ${INITIAL_ADR_CASE.title}](${INITIAL_ADR_CASE.filename})`,
-      ),
-    );
-    expect(readFileSync(initialAdrPath(root), "utf8")).toBe(
-      expectedAdrWithStatusLink(
-        EXPECTED_INITIAL_ADR,
-        `Amended by [${USE_POSTGRESQL_ADR.number}. ${USE_POSTGRESQL_ADR.title}](${USE_POSTGRESQL_ADR.filename})`,
-      ),
-    );
-    expect(runScript(root, ["list"])).toEqual({
-      code: 0,
-      stdout: expectedListRows([USE_POSTGRESQL_ADR]),
-      stderr: [],
-    });
-    expect(runScript(root, ["validate"])).toEqual({
-      code: 0,
-      stdout: [`ADR validation passed: ${adrDirectory}`],
-      stderr: [],
-    });
+    expectPostgresqlAmendsInitial(root);
   });
 
   it("links a new ADR during record creation", () => {
     const root = makeTempRoot();
-    const adrDirectory = path.join(root, DEFAULT_ADR_DIRECTORY);
     const createdAdrPath = adrPath(root, USE_POSTGRESQL_ADR.filename);
 
     expect(runScript(root, ["init"])).toMatchObject({ code: 0 });
@@ -536,28 +564,7 @@ describe("ADR workflows", () => {
       stdout: [createdAdrPath],
       stderr: [],
     });
-    expect(readFileSync(createdAdrPath, "utf8")).toBe(
-      expectedAdrWithStatusLink(
-        expectedDefaultAdr(USE_POSTGRESQL_ADR.number, USE_POSTGRESQL_ADR.title),
-        `Amends [${INITIAL_ADR_CASE.number}. ${INITIAL_ADR_CASE.title}](${INITIAL_ADR_CASE.filename})`,
-      ),
-    );
-    expect(readFileSync(initialAdrPath(root), "utf8")).toBe(
-      expectedAdrWithStatusLink(
-        EXPECTED_INITIAL_ADR,
-        `Amended by [${USE_POSTGRESQL_ADR.number}. ${USE_POSTGRESQL_ADR.title}](${USE_POSTGRESQL_ADR.filename})`,
-      ),
-    );
-    expect(runScript(root, ["list"])).toEqual({
-      code: 0,
-      stdout: expectedListRows([USE_POSTGRESQL_ADR]),
-      stderr: [],
-    });
-    expect(runScript(root, ["validate"])).toEqual({
-      code: 0,
-      stdout: [`ADR validation passed: ${adrDirectory}`],
-      stderr: [],
-    });
+    expectPostgresqlAmendsInitial(root);
   });
 
   it("finds a custom ADR directory from nested working directories", () => {
