@@ -158,14 +158,6 @@ function expectedProjectTemplateAdr(number: number, title: string): string {
 function expectedDefaultAdrSuperseding(
   number: number,
   title: string,
-  supersededAdr: DefaultAdrCase,
-): string {
-  return expectedDefaultAdrSupersedingMany(number, title, [supersededAdr]);
-}
-
-function expectedDefaultAdrSupersedingMany(
-  number: number,
-  title: string,
   supersededAdrs: readonly DefaultAdrCase[],
 ): string {
   const statusLinks = supersededAdrs
@@ -262,6 +254,10 @@ function expectDefaultAdrWorkflow(cases: readonly DefaultAdrCase[]): void {
     stdout: expectedListRows(cases),
     stderr: [],
   });
+}
+
+function supersedesOptions(cases: readonly DefaultAdrCase[]): string[] {
+  return cases.flatMap((adrCase) => ["--supersedes", String(adrCase.number)]);
 }
 
 function writeProjectAdrTemplate(root: string): void {
@@ -378,6 +374,7 @@ describe("ADR workflows", () => {
 
   it("supersedes an existing ADR during record creation", () => {
     const root = makeTempRoot();
+    const supersededAdrs = [INITIAL_ADR_CASE] as const;
     const createdAdrPath = adrPath(root, USE_POSTGRESQL_ADR.filename);
 
     expect(runScript(root, ["init"])).toMatchObject({ code: 0 });
@@ -385,8 +382,7 @@ describe("ADR workflows", () => {
     expect(
       runScript(root, [
         "new",
-        "--supersedes",
-        String(1),
+        ...supersedesOptions(supersededAdrs),
         USE_POSTGRESQL_ADR.title,
       ]),
     ).toEqual({
@@ -401,13 +397,15 @@ describe("ADR workflows", () => {
       expectedDefaultAdrSuperseding(
         USE_POSTGRESQL_ADR.number,
         USE_POSTGRESQL_ADR.title,
-        INITIAL_ADR_CASE,
+        supersededAdrs,
       ),
     );
     expect(runScript(root, ["list"])).toEqual({
       code: 0,
       stdout: [
-        expectedListRow(INITIAL_ADR_CASE, "Superseded"),
+        ...supersededAdrs.map((adrCase) =>
+          expectedListRow(adrCase, "Superseded"),
+        ),
         expectedListRow(USE_POSTGRESQL_ADR),
       ],
       stderr: [],
@@ -416,6 +414,7 @@ describe("ADR workflows", () => {
 
   it("supersedes multiple ADRs during record creation", () => {
     const root = makeTempRoot();
+    const supersededAdrs = [INITIAL_ADR_CASE, USE_MYSQL_ADR] as const;
     const createdAdrPath = adrPath(
       root,
       USE_POSTGRESQL_REPLACEMENT_ADR.filename,
@@ -427,10 +426,7 @@ describe("ADR workflows", () => {
     expect(
       runScript(root, [
         "new",
-        "--supersedes",
-        String(INITIAL_ADR_CASE.number),
-        "--supersedes",
-        String(USE_MYSQL_ADR.number),
+        ...supersedesOptions(supersededAdrs),
         USE_POSTGRESQL_REPLACEMENT_ADR.title,
       ]),
     ).toEqual({
@@ -448,17 +444,18 @@ describe("ADR workflows", () => {
       ),
     );
     expect(readFileSync(createdAdrPath, "utf8")).toBe(
-      expectedDefaultAdrSupersedingMany(
+      expectedDefaultAdrSuperseding(
         USE_POSTGRESQL_REPLACEMENT_ADR.number,
         USE_POSTGRESQL_REPLACEMENT_ADR.title,
-        [INITIAL_ADR_CASE, USE_MYSQL_ADR],
+        supersededAdrs,
       ),
     );
     expect(runScript(root, ["list"])).toEqual({
       code: 0,
       stdout: [
-        expectedListRow(INITIAL_ADR_CASE, "Superseded"),
-        expectedListRow(USE_MYSQL_ADR, "Superseded"),
+        ...supersededAdrs.map((adrCase) =>
+          expectedListRow(adrCase, "Superseded"),
+        ),
         expectedListRow(USE_POSTGRESQL_REPLACEMENT_ADR),
       ],
       stderr: [],
