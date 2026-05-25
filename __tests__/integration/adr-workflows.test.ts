@@ -135,26 +135,10 @@ Accepted
 }
 
 function expectedProjectTemplateAdr(number: number, title: string): string {
-  return `# ${number}. ${title}
-
-Date: ${TEST_DATE}
-
-## Status
-
-Accepted
-
-## Context
-
-Describe project-specific forces here.
-
-## Decision
-
-Describe the project-specific decision here.
-
-## Consequences
-
-Describe project-specific outcomes here.
-`;
+  return PROJECT_ADR_TEMPLATE.replace("NUMBER", String(number))
+    .replace("TITLE", title)
+    .replace("DATE", TEST_DATE)
+    .replace("STATUS", "Accepted");
 }
 
 function expectedListRows(cases: readonly DefaultAdrCase[]): string[] {
