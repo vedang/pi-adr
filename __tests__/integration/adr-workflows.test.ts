@@ -39,6 +39,23 @@ const NEW_ADR_CASES = [
     filename: "0003-use-redis-for-cache.md",
   },
 ] as const;
+const FUNNY_TITLE_CASES = [
+  {
+    number: 2,
+    title: "Something About Node.JS",
+    filename: "0002-something-about-node-js.md",
+  },
+  {
+    number: 3,
+    title: "Slash/Slash/Slash/",
+    filename: "0003-slash-slash-slash.md",
+  },
+  {
+    number: 4,
+    title: '"-Bar-"',
+    filename: "0004-bar.md",
+  },
+] as const;
 const tempRoots: string[] = [];
 
 function makeTempRoot(): string {
@@ -134,6 +151,35 @@ describe("ADR workflows", () => {
       stdout: [
         "1\tAccepted\t0001-record-architecture-decisions.md\tRecord architecture decisions",
         ...NEW_ADR_CASES.map(({ number, filename, title }) =>
+          [number, "Accepted", filename, title].join("\t"),
+        ),
+      ],
+      stderr: [],
+    });
+  });
+
+  it("slugifies funny title characters during record creation", () => {
+    const root = makeTempRoot();
+
+    expect(runScript(root, ["init"])).toMatchObject({ code: 0 });
+    for (const { number, title, filename } of FUNNY_TITLE_CASES) {
+      const filePath = adrPath(root, filename);
+
+      expect(runScript(root, ["new", title])).toEqual({
+        code: 0,
+        stdout: [filePath],
+        stderr: [],
+      });
+      expect(readFileSync(filePath, "utf8")).toBe(
+        expectedDefaultAdr(number, title),
+      );
+    }
+
+    expect(runScript(root, ["list"])).toEqual({
+      code: 0,
+      stdout: [
+        "1\tAccepted\t0001-record-architecture-decisions.md\tRecord architecture decisions",
+        ...FUNNY_TITLE_CASES.map(({ number, filename, title }) =>
           [number, "Accepted", filename, title].join("\t"),
         ),
       ],
