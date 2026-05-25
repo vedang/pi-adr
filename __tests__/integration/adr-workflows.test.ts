@@ -7,8 +7,6 @@ import { runAdrScript } from "../../skills/adr/scripts/adr";
 
 const TEST_DATE = "2026-05-25";
 const INITIAL_ADR_FILENAME = "0001-record-architecture-decisions.md";
-const POSTGRES_ADR_FILENAME = "0002-use-postgresql.md";
-const REDIS_ADR_FILENAME = "0003-use-redis-for-cache.md";
 const EXPECTED_INITIAL_ADR = `# 1. Record architecture decisions
 
 Date: ${TEST_DATE}
@@ -29,34 +27,18 @@ We will record architecture decisions as numbered Markdown files in version cont
 
 Future maintainers can understand why decisions were made. The project gains a small documentation maintenance obligation. Superseded decisions remain available as historical context.
 `;
-const EXPECTED_POSTGRES_ADR = `# 2. Use PostgreSQL
-
-Date: ${TEST_DATE}
-
-## Status
-
-Accepted
-
-## Context
-
-## Decision
-
-## Consequences
-`;
-const EXPECTED_REDIS_ADR = `# 3. Use Redis for cache
-
-Date: ${TEST_DATE}
-
-## Status
-
-Accepted
-
-## Context
-
-## Decision
-
-## Consequences
-`;
+const NEW_ADR_CASES = [
+  {
+    number: 2,
+    title: "Use PostgreSQL",
+    filename: "0002-use-postgresql.md",
+  },
+  {
+    number: 3,
+    title: "Use Redis for cache",
+    filename: "0003-use-redis-for-cache.md",
+  },
+] as const;
 const tempRoots: string[] = [];
 
 function makeTempRoot(): string {
@@ -71,6 +53,23 @@ function adrPath(root: string, filename: string): string {
 
 function initialAdrPath(root: string): string {
   return adrPath(root, INITIAL_ADR_FILENAME);
+}
+
+function expectedDefaultAdr(number: number, title: string): string {
+  return `# ${number}. ${title}
+
+Date: ${TEST_DATE}
+
+## Status
+
+Accepted
+
+## Context
+
+## Decision
+
+## Consequences
+`;
 }
 
 function runScript(
@@ -115,29 +114,28 @@ describe("ADR workflows", () => {
 
   it("creates multiple records with monotonic numbering", () => {
     const root = makeTempRoot();
-    const postgresPath = adrPath(root, POSTGRES_ADR_FILENAME);
-    const redisPath = adrPath(root, REDIS_ADR_FILENAME);
 
     expect(runScript(root, ["init"])).toMatchObject({ code: 0 });
-    expect(runScript(root, ["new", "Use PostgreSQL"])).toEqual({
-      code: 0,
-      stdout: [postgresPath],
-      stderr: [],
-    });
-    expect(runScript(root, ["new", "Use Redis for cache"])).toEqual({
-      code: 0,
-      stdout: [redisPath],
-      stderr: [],
-    });
+    for (const { number, title, filename } of NEW_ADR_CASES) {
+      const filePath = adrPath(root, filename);
 
-    expect(readFileSync(postgresPath, "utf8")).toBe(EXPECTED_POSTGRES_ADR);
-    expect(readFileSync(redisPath, "utf8")).toBe(EXPECTED_REDIS_ADR);
+      expect(runScript(root, ["new", title])).toEqual({
+        code: 0,
+        stdout: [filePath],
+        stderr: [],
+      });
+      expect(readFileSync(filePath, "utf8")).toBe(
+        expectedDefaultAdr(number, title),
+      );
+    }
+
     expect(runScript(root, ["list"])).toEqual({
       code: 0,
       stdout: [
         "1\tAccepted\t0001-record-architecture-decisions.md\tRecord architecture decisions",
-        "2\tAccepted\t0002-use-postgresql.md\tUse PostgreSQL",
-        "3\tAccepted\t0003-use-redis-for-cache.md\tUse Redis for cache",
+        ...NEW_ADR_CASES.map(({ number, filename, title }) =>
+          [number, "Accepted", filename, title].join("\t"),
+        ),
       ],
       stderr: [],
     });
