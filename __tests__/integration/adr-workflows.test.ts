@@ -108,53 +108,16 @@ const FUNNY_TITLE_CASES = [
     filename: "0004-bar.md",
   },
 ] as const;
-const OCTAL_NUMBER_ADR_CASES = [
-  {
-    number: 2,
-    title: "Decision 2",
-    filename: "0002-decision-2.md",
-  },
-  {
-    number: 3,
-    title: "Decision 3",
-    filename: "0003-decision-3.md",
-  },
-  {
-    number: 4,
-    title: "Decision 4",
-    filename: "0004-decision-4.md",
-  },
-  {
-    number: 5,
-    title: "Decision 5",
-    filename: "0005-decision-5.md",
-  },
-  {
-    number: 6,
-    title: "Decision 6",
-    filename: "0006-decision-6.md",
-  },
-  {
-    number: 7,
-    title: "Decision 7",
-    filename: "0007-decision-7.md",
-  },
-  {
-    number: 8,
-    title: "Decision 8",
-    filename: "0008-decision-8.md",
-  },
-  {
-    number: 9,
-    title: "Decision 9",
-    filename: "0009-decision-9.md",
-  },
-  {
-    number: 10,
-    title: "Decision 10",
-    filename: "0010-decision-10.md",
-  },
-] as const;
+const OCTAL_NUMBER_ADR_CASES = Array.from({ length: 9 }, (_, index) => {
+  const number = index + 2;
+  const paddedNumber = String(number).padStart(4, "0");
+
+  return {
+    number,
+    title: `Decision ${number}`,
+    filename: `${paddedNumber}-decision-${number}.md`,
+  };
+});
 const tempRoots: string[] = [];
 
 function makeTempRoot(): string {
