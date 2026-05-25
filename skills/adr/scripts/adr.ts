@@ -1,29 +1,15 @@
 #!/usr/bin/env bun
 
 import { pathToFileURL } from "node:url";
+import { formatAdrFilename, slugifyAdrTitle } from "./lib/slug";
+
+export { formatAdrFilename, slugifyAdrTitle } from "./lib/slug";
 
 function usage(): string {
   return `Usage:
   adr.ts slug <title...>
   adr.ts filename <number> <title...>
 `;
-}
-
-export function slugifyAdrTitle(title: string): string {
-  const slug = title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-  return slug || "adr";
-}
-
-export function formatAdrFilename(number: number, title: string): string {
-  if (!Number.isInteger(number) || number < 1) {
-    throw new Error("ADR number must be a positive integer");
-  }
-
-  return `${String(number).padStart(4, "0")}-${slugifyAdrTitle(title)}.md`;
 }
 
 export function runAdrScript(argv: string[]): number {
