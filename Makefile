@@ -76,7 +76,7 @@ test-integration:
 	bunx vitest run --config $(TEST_CONFIG_INTEGRATION)
 
 .PHONY: test
-test: test-unit    ## Run the default test suite
+test: test-unit test-integration    ## Run the default test suite
 
 .PHONY: dev
 dev:    ## Run the local development watch loop
