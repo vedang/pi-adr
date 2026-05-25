@@ -6,12 +6,37 @@ import { afterEach, describe, expect, it } from "vitest";
 import { runAdrScript } from "../../skills/adr/scripts/adr";
 
 const TEST_DATE = "2026-05-25";
+const INITIAL_ADR_FILENAME = "0001-record-architecture-decisions.md";
+const EXPECTED_INITIAL_ADR = `# 1. Record architecture decisions
+
+Date: ${TEST_DATE}
+
+## Status
+
+Accepted
+
+## Context
+
+The project needs a lightweight way to preserve important architecture decisions and the forces that shaped them.
+
+## Decision
+
+We will record architecture decisions as numbered Markdown files in version control.
+
+## Consequences
+
+Future maintainers can understand why decisions were made. The project gains a small documentation maintenance obligation. Superseded decisions remain available as historical context.
+`;
 const tempRoots: string[] = [];
 
 function makeTempRoot(): string {
   const root = mkdtempSync(path.join(tmpdir(), "pi-adr-workflow-"));
   tempRoots.push(root);
   return root;
+}
+
+function initialAdrPath(root: string): string {
+  return path.join(root, "doc", "adr", INITIAL_ADR_FILENAME);
 }
 
 function runScript(
@@ -43,11 +68,7 @@ afterEach(() => {
 describe("ADR workflows", () => {
   it("creates the first record", () => {
     const root = makeTempRoot();
-    const adrDirectory = path.join(root, "doc", "adr");
-    const adrPath = path.join(
-      adrDirectory,
-      "0001-record-architecture-decisions.md",
-    );
+    const adrPath = initialAdrPath(root);
 
     expect(runScript(root, ["init"])).toEqual({
       code: 0,
@@ -55,27 +76,6 @@ describe("ADR workflows", () => {
       stderr: [],
     });
     expect(existsSync(path.join(root, ".adr-dir"))).toBe(false);
-    expect(
-      readFileSync(adrPath, "utf8"),
-    ).toBe(`# 1. Record architecture decisions
-
-Date: ${TEST_DATE}
-
-## Status
-
-Accepted
-
-## Context
-
-The project needs a lightweight way to preserve important architecture decisions and the forces that shaped them.
-
-## Decision
-
-We will record architecture decisions as numbered Markdown files in version control.
-
-## Consequences
-
-Future maintainers can understand why decisions were made. The project gains a small documentation maintenance obligation. Superseded decisions remain available as historical context.
-`);
+    expect(readFileSync(adrPath, "utf8")).toBe(EXPECTED_INITIAL_ADR);
   });
 });
