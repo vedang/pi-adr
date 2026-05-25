@@ -517,6 +517,49 @@ describe("ADR workflows", () => {
     });
   });
 
+  it("links a new ADR during record creation", () => {
+    const root = makeTempRoot();
+    const adrDirectory = path.join(root, DEFAULT_ADR_DIRECTORY);
+    const createdAdrPath = adrPath(root, USE_POSTGRESQL_ADR.filename);
+
+    expect(runScript(root, ["init"])).toMatchObject({ code: 0 });
+
+    expect(
+      runScript(root, [
+        "new",
+        "--link",
+        `${INITIAL_ADR_CASE.number}:Amends:Amended by`,
+        USE_POSTGRESQL_ADR.title,
+      ]),
+    ).toEqual({
+      code: 0,
+      stdout: [createdAdrPath],
+      stderr: [],
+    });
+    expect(readFileSync(createdAdrPath, "utf8")).toBe(
+      expectedAdrWithStatusLink(
+        expectedDefaultAdr(USE_POSTGRESQL_ADR.number, USE_POSTGRESQL_ADR.title),
+        `Amends [${INITIAL_ADR_CASE.number}. ${INITIAL_ADR_CASE.title}](${INITIAL_ADR_CASE.filename})`,
+      ),
+    );
+    expect(readFileSync(initialAdrPath(root), "utf8")).toBe(
+      expectedAdrWithStatusLink(
+        EXPECTED_INITIAL_ADR,
+        `Amended by [${USE_POSTGRESQL_ADR.number}. ${USE_POSTGRESQL_ADR.title}](${USE_POSTGRESQL_ADR.filename})`,
+      ),
+    );
+    expect(runScript(root, ["list"])).toEqual({
+      code: 0,
+      stdout: expectedListRows([USE_POSTGRESQL_ADR]),
+      stderr: [],
+    });
+    expect(runScript(root, ["validate"])).toEqual({
+      code: 0,
+      stdout: [`ADR validation passed: ${adrDirectory}`],
+      stderr: [],
+    });
+  });
+
   it("finds a custom ADR directory from nested working directories", () => {
     const root = makeTempRoot();
     const nestedDirectory = path.join(root, "src", "app", "feature");
