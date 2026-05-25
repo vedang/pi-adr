@@ -748,4 +748,23 @@ describe("ADR workflows", () => {
       ],
     });
   });
+
+  it("reports heading number mismatches during validation", () => {
+    const root = createDefaultAdrWorkflow([USE_POSTGRESQL_ADR]);
+    const filePath = adrPath(root, USE_POSTGRESQL_ADR.filename);
+    const wrongHeadingNumber = USE_POSTGRESQL_ADR.number + 1;
+
+    writeFileSync(
+      filePath,
+      expectedDefaultAdr(wrongHeadingNumber, USE_POSTGRESQL_ADR.title),
+    );
+
+    expect(runScript(root, ["validate"])).toEqual({
+      code: 1,
+      stdout: [],
+      stderr: [
+        `${filePath}:1: ADR heading number ${wrongHeadingNumber} does not match filename number ${USE_POSTGRESQL_ADR.number}`,
+      ],
+    });
+  });
 });
