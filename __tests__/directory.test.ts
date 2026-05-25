@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -11,14 +11,13 @@ import {
 const tempRoots: string[] = [];
 
 function makeTempRoot(): string {
-  const root = path.join(
-    tmpdir(),
-    `pi-adr-directory-${process.pid}-${tempRoots.length}`,
-  );
-  rmSync(root, { recursive: true, force: true });
-  mkdirSync(root, { recursive: true });
+  const root = mkdtempSync(path.join(tmpdir(), "pi-adr-directory-"));
   tempRoots.push(root);
   return root;
+}
+
+function expectDiscoveredDirectory(cwd: string, directory: string): void {
+  expect(discoverAdrRepositoryConfig(cwd).directory).toBe(directory);
 }
 
 afterEach(() => {
@@ -50,7 +49,8 @@ describe("ADR directory discovery", () => {
     mkdirSync(cwd, { recursive: true });
     writeFileSync(path.join(root, ".adr-dir"), "architecture/decisions\n");
 
-    expect(discoverAdrRepositoryConfig(cwd).directory).toBe(
+    expectDiscoveredDirectory(
+      cwd,
       path.join(root, "architecture", "decisions"),
     );
   });
@@ -67,9 +67,7 @@ describe("ADR directory discovery", () => {
     mkdirSync(nearestAdrDirectory, { recursive: true });
     mkdirSync(cwd, { recursive: true });
 
-    expect(discoverAdrRepositoryConfig(cwd).directory).toBe(
-      nearestAdrDirectory,
-    );
+    expectDiscoveredDirectory(cwd, nearestAdrDirectory);
   });
 
   it("stops at a nearer doc/adr before a farther .adr-dir marker", () => {
@@ -84,9 +82,7 @@ describe("ADR directory discovery", () => {
     mkdirSync(cwd, { recursive: true });
     writeFileSync(path.join(root, ".adr-dir"), "root-decisions\n");
 
-    expect(discoverAdrRepositoryConfig(cwd).directory).toBe(
-      nearestAdrDirectory,
-    );
+    expectDiscoveredDirectory(cwd, nearestAdrDirectory);
   });
 
   it("defaults to repo root doc/adr when no ADR markers exist", () => {
@@ -95,9 +91,7 @@ describe("ADR directory discovery", () => {
     mkdirSync(path.join(root, ".git"), { recursive: true });
     mkdirSync(cwd, { recursive: true });
 
-    expect(discoverAdrRepositoryConfig(cwd).directory).toBe(
-      path.join(root, DEFAULT_ADR_DIRECTORY),
-    );
+    expectDiscoveredDirectory(cwd, path.join(root, DEFAULT_ADR_DIRECTORY));
   });
 
   it("defaults to the start cwd doc/adr outside a repository", () => {
@@ -105,9 +99,7 @@ describe("ADR directory discovery", () => {
     const cwd = path.join(root, "workspace", "src");
     mkdirSync(cwd, { recursive: true });
 
-    expect(discoverAdrRepositoryConfig(cwd).directory).toBe(
-      path.join(cwd, DEFAULT_ADR_DIRECTORY),
-    );
+    expectDiscoveredDirectory(cwd, path.join(cwd, DEFAULT_ADR_DIRECTORY));
   });
 
   it("rejects empty .adr-dir files", () => {

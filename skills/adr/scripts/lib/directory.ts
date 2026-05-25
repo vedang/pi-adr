@@ -29,18 +29,6 @@ function statPath(filePath: string): Stats | null {
   }
 }
 
-function pathExists(filePath: string): boolean {
-  return statPath(filePath) !== null;
-}
-
-function isDirectory(filePath: string): boolean {
-  return statPath(filePath)?.isDirectory() ?? false;
-}
-
-function isFile(filePath: string): boolean {
-  return statPath(filePath)?.isFile() ?? false;
-}
-
 function readAdrDirMarker(configFilePath: string): string {
   const adrDirectory = readFileSync(configFilePath, "utf8").trim();
   if (!adrDirectory) {
@@ -53,8 +41,8 @@ function readAdrDirMarker(configFilePath: string): string {
 }
 
 function hasRepositoryMarker(directory: string): boolean {
-  return REPOSITORY_MARKERS.some((marker) =>
-    pathExists(path.join(directory, marker)),
+  return REPOSITORY_MARKERS.some(
+    (marker) => statPath(path.join(directory, marker)) !== null,
   );
 }
 
@@ -67,7 +55,7 @@ export function discoverAdrRepositoryConfig(
 
   while (true) {
     const configFilePath = path.join(currentDirectory, ADR_DIR_MARKER);
-    if (isFile(configFilePath)) {
+    if (statPath(configFilePath)?.isFile()) {
       const adrDirectory = readAdrDirMarker(configFilePath);
       return {
         cwd: startDirectory,
@@ -81,7 +69,7 @@ export function discoverAdrRepositoryConfig(
       currentDirectory,
       DEFAULT_ADR_DIRECTORY,
     );
-    if (isDirectory(candidateDirectory)) {
+    if (statPath(candidateDirectory)?.isDirectory()) {
       return {
         cwd: startDirectory,
         directory: candidateDirectory,
