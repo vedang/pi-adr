@@ -260,6 +260,14 @@ function expectedListRows(cases: readonly DefaultAdrCase[]): string[] {
   ];
 }
 
+function expectedTableOfContents(cases: readonly DefaultAdrCase[]): string {
+  const lines = [INITIAL_ADR_CASE, ...cases].map(
+    ({ filename, title }) => `* [${title}](${filename})`,
+  );
+
+  return `# Architecture Decision Records\n\n${lines.join("\n")}\n`;
+}
+
 function expectDefaultAdrCreation(
   root: string,
   cases: readonly DefaultAdrCase[],
@@ -565,6 +573,19 @@ describe("ADR workflows", () => {
       stderr: [],
     });
     expectPostgresqlAmendsInitial(root);
+  });
+
+  it("generates Markdown contents for the ADR log", () => {
+    const root = makeTempRoot();
+
+    expect(runScript(root, ["init"])).toMatchObject({ code: 0 });
+    expectDefaultAdrCreation(root, NEW_ADR_CASES);
+
+    expect(runScript(root, ["toc"])).toEqual({
+      code: 0,
+      stdout: [expectedTableOfContents(NEW_ADR_CASES)],
+      stderr: [],
+    });
   });
 
   it("finds a custom ADR directory from nested working directories", () => {
