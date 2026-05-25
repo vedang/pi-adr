@@ -8,15 +8,16 @@
     "pi-package",
     "pi",
     "extension",
-    "prompt",
+    "skill",
     "adr",
     "architecture-decision-records"
   ],
   "pi": {
     "extensions": ["./src/index.ts"],
-    "prompts": ["./prompts"]
+    "skills": ["./skills"]
   },
   "scripts": {
+    "adr": "bun run skills/adr/scripts/adr.ts",
     "build": "tsc -p tsconfig.json",
     "dev": "tsc --noEmit --watch --preserveWatchOutput",
     "test": "vitest run --config vitest.config.unit.ts",

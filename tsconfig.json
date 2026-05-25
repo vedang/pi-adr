@@ -12,5 +12,10 @@
     "noEmitOnError": true,
     "types": ["node"]
   },
-  "include": ["src/**/*.ts", "__tests__/**/*.ts", "vitest.config.*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "skills/**/*.ts",
+    "__tests__/**/*.ts",
+    "vitest.config.*.ts"
+  ]
 }

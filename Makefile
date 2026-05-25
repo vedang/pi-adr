@@ -1,7 +1,7 @@
 SHELL = /bin/bash -Eeu -o pipefail
 
-BIOME_SCOPE ?= src/index.ts package.json tsconfig.json biome.json knip.json vitest.config.unit.ts vitest.config.integration.ts vitest.config.llm.ts
-JSCPD_SCOPE ?= src/index.ts
+BIOME_SCOPE ?= src/index.ts skills/adr/scripts/adr.ts __tests__/adr-script.test.ts package.json tsconfig.json biome.json knip.json vitest.config.unit.ts vitest.config.integration.ts vitest.config.llm.ts
+JSCPD_SCOPE ?= src/index.ts skills/adr/scripts/adr.ts
 TEST_CONFIG_UNIT ?= vitest.config.unit.ts
 TEST_CONFIG_INTEGRATION ?= vitest.config.integration.ts
 TEST_CONFIG_LLM ?= vitest.config.llm.ts

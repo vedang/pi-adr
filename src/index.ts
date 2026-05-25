@@ -3,8 +3,9 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 /**
  * Placeholder extension entry point for the pi-adr package.
  *
- * ADR creation workflow will be implemented after the discovery plan is
- * accepted. Keeping this entry point makes scaffold quality gates executable.
+ * The primary workflow lives in the bundled `skills/adr` Agent Skill so humans
+ * and agents can use the ADR guidance, references, templates, and scripts
+ * without relying on a slash prompt.
  */
 export default function adrExtension(_pi: ExtensionAPI): void {
   // Intentionally idle until ADR automation is implemented.

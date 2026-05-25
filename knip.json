@@ -5,6 +5,6 @@
     "vitest.config.integration.ts",
     "vitest.config.llm.ts"
   ],
-  "project": ["src/**/*.ts"],
+  "project": ["src/**/*.ts", "skills/**/*.ts", "__tests__/**/*.ts"],
   "ignoreDependencies": ["@biomejs/biome", "jscpd"]
 }
