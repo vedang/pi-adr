@@ -725,12 +725,18 @@ describe("ADR workflows", () => {
   it("reports broken status links during validation", () => {
     const root = createDefaultAdrWorkflow([USE_POSTGRESQL_ADR]);
     const filePath = adrPath(root, USE_POSTGRESQL_ADR.filename);
+    const missingAdr = {
+      number: 99,
+      title: "Missing ADR",
+      filename: "0099-missing-adr.md",
+    } as const;
 
     writeFileSync(
       filePath,
-      expectedAdrWithStatusLink(
-        expectedDefaultAdr(USE_POSTGRESQL_ADR.number, USE_POSTGRESQL_ADR.title),
-        "Amends [99. Missing ADR](0099-missing-adr.md)",
+      expectedDefaultAdrWithStatusLink(
+        USE_POSTGRESQL_ADR,
+        "Amends",
+        missingAdr,
       ),
     );
 
@@ -738,7 +744,7 @@ describe("ADR workflows", () => {
       code: 1,
       stdout: [],
       stderr: [
-        `${filePath}:9: ADR status link target does not exist: 0099-missing-adr.md`,
+        `${filePath}:9: ADR status link target does not exist: ${missingAdr.filename}`,
       ],
     });
   });
