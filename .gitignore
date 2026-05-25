@@ -1,2 +1,7 @@
+node_modules/
+dist/
+coverage/
+.DS_Store
+*.tsbuildinfo
 .agents/plans/
-.pi/extensions/simplify-code.json
+.pi/extensions/adr.json
