@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
-import { ADR_STATUS_VALUES, type AdrRecord } from "./model";
+import { ADR_STATUS_VALUES, type AdrLink } from "./model";
 import { parseAdrFilename, parseAdrMarkdown } from "./parser";
 
 interface AdrValidationIssue {
@@ -11,7 +11,7 @@ interface AdrValidationIssue {
 }
 
 interface AdrValidationEntry {
-  readonly record: AdrRecord;
+  readonly links: readonly AdrLink[];
   readonly filenameNumber: number;
   readonly filename: string;
   readonly filePath: string;
@@ -34,6 +34,10 @@ const REQUIRED_SECTIONS = [
   "Consequences",
 ] as const;
 const STATUS_VALUES = ADR_STATUS_VALUES.join(", ");
+
+function isAdrStatusValue(value: string): boolean {
+  return (ADR_STATUS_VALUES as readonly string[]).includes(value);
+}
 
 function issue(
   filePath: string,
@@ -66,7 +70,7 @@ function readAdrEntries(directory: string): AdrValidationEntry[] {
     const rawContent = readFileSync(filePath, "utf8");
 
     entries.push({
-      record: parseAdrMarkdown(filePath, rawContent),
+      links: parseAdrMarkdown(filePath, rawContent).links,
       filenameNumber: parsedFilename.number,
       filename: entry.name,
       filePath,
@@ -159,9 +163,12 @@ function validateDuplicateNumbers(
   const byNumber = new Map<number, AdrValidationEntry[]>();
 
   for (const entry of entries) {
-    const duplicateEntries = byNumber.get(entry.filenameNumber) ?? [];
+    let duplicateEntries = byNumber.get(entry.filenameNumber);
+    if (!duplicateEntries) {
+      duplicateEntries = [];
+      byNumber.set(entry.filenameNumber, duplicateEntries);
+    }
     duplicateEntries.push(entry);
-    byNumber.set(entry.filenameNumber, duplicateEntries);
   }
 
   const issues: AdrValidationIssue[] = [];
@@ -223,8 +230,15 @@ function validateStructure(entry: AdrValidationEntry): AdrValidationIssue[] {
     );
   }
 
-  for (const sectionName of REQUIRED_SECTIONS) {
-    if (!findSection(lines, sectionName)) {
+  const sections = new Map(
+    REQUIRED_SECTIONS.map((sectionName) => [
+      sectionName,
+      findSection(lines, sectionName),
+    ]),
+  );
+
+  for (const [sectionName, section] of sections) {
+    if (!section) {
       issues.push(
         issue(
           entry.filePath,
@@ -234,7 +248,7 @@ function validateStructure(entry: AdrValidationEntry): AdrValidationIssue[] {
     }
   }
 
-  const statusSection = findSection(lines, "Status");
+  const statusSection = sections.get("Status");
   if (!statusSection) {
     return issues;
   }
@@ -253,9 +267,7 @@ function validateStructure(entry: AdrValidationEntry): AdrValidationIssue[] {
         statusSection.headerLine,
       ),
     );
-  } else if (
-    !(ADR_STATUS_VALUES as readonly string[]).includes(statusLine.value)
-  ) {
+  } else if (!isAdrStatusValue(statusLine.value)) {
     issues.push(
       issue(
         entry.filePath,
@@ -268,8 +280,8 @@ function validateStructure(entry: AdrValidationEntry): AdrValidationIssue[] {
   return issues;
 }
 
-function stripHrefAnchorAndQuery(href: string): string {
-  return href.split("#", 1)[0].split("?", 1)[0];
+function stripHrefFragmentAndQuery(href: string): string {
+  return href.split(/[?#]/, 1)[0];
 }
 
 function isExternalHref(href: string): boolean {
@@ -293,12 +305,12 @@ function validateLinks(
   const issues: AdrValidationIssue[] = [];
 
   for (const entry of entries) {
-    for (const link of entry.record.links) {
+    for (const link of entry.links) {
       if (isExternalHref(link.targetHref)) {
         continue;
       }
 
-      const href = stripHrefAnchorAndQuery(link.targetHref);
+      const href = stripHrefFragmentAndQuery(link.targetHref);
       const targetFilename = path.basename(href);
 
       if (targetFilename && filenames.has(targetFilename)) {
