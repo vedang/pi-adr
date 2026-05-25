@@ -10,6 +10,10 @@ export const ADR_STATUS_VALUES = [
 
 export type AdrStatus = (typeof ADR_STATUS_VALUES)[number];
 
+export function isAdrStatus(value: string): value is AdrStatus {
+  return (ADR_STATUS_VALUES as readonly string[]).includes(value);
+}
+
 export const DEFAULT_ADR_STATUS = "Accepted" satisfies AdrStatus;
 
 export const ADR_LINK_RELATIONSHIPS = {

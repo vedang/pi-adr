@@ -1,8 +1,12 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
-import { ADR_STATUS_VALUES, type AdrLink } from "./model";
-import { parseAdrFilename, parseAdrMarkdown } from "./parser";
+import { ADR_STATUS_VALUES, type AdrLink, isAdrStatus } from "./model";
+import {
+  isSupersededByStatusLine,
+  parseAdrFilename,
+  parseAdrMarkdown,
+} from "./parser";
 
 interface AdrValidationIssue {
   readonly filePath: string;
@@ -26,8 +30,6 @@ interface SectionBounds {
 const ADR_HEADING_PATTERN = /^#\s*(\d+)\.\s*(.+)\s*$/;
 const DATE_PATTERN = /^Date:\s*(.*)\s*$/;
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const SUPERSEDED_BY_LINK_PATTERN =
-  /^Super(?:s|c)eded by\s+\[[^\]]+\]\([^)]+\)$/;
 const HEADING_PATTERN = /^#{1,6}\s+/;
 const REQUIRED_SECTIONS = [
   "Status",
@@ -38,10 +40,7 @@ const REQUIRED_SECTIONS = [
 const STATUS_VALUES = ADR_STATUS_VALUES.join(", ");
 
 function isAdrStatusLine(value: string): boolean {
-  return (
-    (ADR_STATUS_VALUES as readonly string[]).includes(value) ||
-    SUPERSEDED_BY_LINK_PATTERN.test(value)
-  );
+  return isAdrStatus(value) || isSupersededByStatusLine(value);
 }
 
 function issue(

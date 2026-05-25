@@ -39,6 +39,18 @@ function runScript(
   return { code, stdout, stderr };
 }
 
+function defaultAdrDirectory(root: string): string {
+  return path.join(root, "doc", "adr");
+}
+
+function defaultAdrPath(root: string, filename: string): string {
+  return path.join(defaultAdrDirectory(root), filename);
+}
+
+function readDefaultAdr(root: string, filename: string): string {
+  return readFileSync(defaultAdrPath(root, filename), "utf8");
+}
+
 function writeAdr(directory: string, filename: string, markdown: string): void {
   mkdirSync(directory, { recursive: true });
   writeFileSync(path.join(directory, filename), `${markdown}\n`);
@@ -97,22 +109,18 @@ describe("ADR script", () => {
       "1",
       "Use PostgreSQL",
     ]);
-    const adrDirectory = path.join(root, "doc", "adr");
-    const createdPath = path.join(adrDirectory, "0002-use-postgresql.md");
+    const createdPath = defaultAdrPath(root, "0002-use-postgresql.md");
 
     expect(result).toEqual({ code: 0, stdout: [createdPath], stderr: [] });
-    expect(readFileSync(createdPath, "utf8")).toContain(
+    expect(readDefaultAdr(root, "0002-use-postgresql.md")).toContain(
       "Proposed\n\nSupersedes [1. Record architecture decisions](0001-record-architecture-decisions.md)",
     );
     expect(
-      readFileSync(
-        path.join(adrDirectory, "0001-record-architecture-decisions.md"),
-        "utf8",
-      ),
+      readDefaultAdr(root, "0001-record-architecture-decisions.md"),
     ).toContain("Superseded by [2. Use PostgreSQL](0002-use-postgresql.md)");
     expect(runScript(root, ["validate"])).toEqual({
       code: 0,
-      stdout: [`ADR validation passed: ${adrDirectory}`],
+      stdout: [`ADR validation passed: ${defaultAdrDirectory(root)}`],
       stderr: [],
     });
   });
@@ -195,7 +203,8 @@ describe("ADR script", () => {
 
   it("validates ADR directories with line-aware errors", () => {
     const root = makeTempRoot();
-    const adrDirectory = path.join(root, "doc", "adr");
+    const adrDirectory = defaultAdrDirectory(root);
+    const brokenPath = defaultAdrPath(root, "0001-broken.md");
     writeAdr(
       adrDirectory,
       "0001-broken.md",
@@ -224,14 +233,8 @@ Known trade-offs.`,
       code: 1,
       stdout: [],
       stderr: [
-        `${path.join(
-          adrDirectory,
-          "0001-broken.md",
-        )}:3: ADR date must use ISO format YYYY-MM-DD`,
-        `${path.join(
-          adrDirectory,
-          "0001-broken.md",
-        )}:7: ADR status must be one of: Proposed, Accepted, Rejected, Deprecated, Superseded`,
+        `${brokenPath}:3: ADR date must use ISO format YYYY-MM-DD`,
+        `${brokenPath}:7: ADR status must be one of: Proposed, Accepted, Rejected, Deprecated, Superseded`,
       ],
     });
   });

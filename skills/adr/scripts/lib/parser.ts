@@ -2,10 +2,10 @@ import path from "node:path";
 
 import {
   ADR_LINK_RELATIONSHIPS as ADR_LINK_RELATIONSHIP_MAP,
-  ADR_STATUS_VALUES,
   type AdrLink,
   type AdrRecord,
   type AdrStatus,
+  isAdrStatus,
 } from "./model";
 
 interface ParsedAdrFilename {
@@ -71,8 +71,8 @@ export function extractAdrStatusBlock(markdown: string): string {
   return statusLines.join("\n").trim();
 }
 
-function isAdrStatusValue(value: string): value is AdrStatus {
-  return (ADR_STATUS_VALUES as readonly string[]).includes(value);
+export function isSupersededByStatusLine(value: string): boolean {
+  return SUPERSEDED_BY_LINK_PATTERN.test(value);
 }
 
 function parseAdrDate(markdown: string): string | null {
@@ -90,13 +90,11 @@ function parseAdrStatus(markdown: string): AdrStatus | null {
     return null;
   }
 
-  if (isAdrStatusValue(firstNonEmptyLine)) {
+  if (isAdrStatus(firstNonEmptyLine)) {
     return firstNonEmptyLine;
   }
 
-  return SUPERSEDED_BY_LINK_PATTERN.test(firstNonEmptyLine)
-    ? "Superseded"
-    : null;
+  return isSupersededByStatusLine(firstNonEmptyLine) ? "Superseded" : null;
 }
 
 function parseAdrHeading(markdown: string): {

@@ -17,6 +17,7 @@ import {
   type AdrStatus,
   DEFAULT_ADR_DIRECTORY,
   DEFAULT_ADR_STATUS,
+  isAdrStatus,
 } from "./lib/model";
 import { generateAdrGraph, generateAdrToc } from "./lib/reports";
 import { createAdrRecord, listAdrRecords } from "./lib/repository";
@@ -55,6 +56,13 @@ interface ReportCommandOptions {
   readonly prefix?: string;
   readonly extension?: string;
 }
+
+type CommandHandler = (
+  runtime: AdrScriptRuntime,
+  args: readonly string[],
+) => number;
+
+type ReportCommandName = "toc" | "graph";
 
 const INITIAL_ADR_TITLE = "Record architecture decisions";
 const ADR_DIR_MARKER = ".adr-dir";
@@ -109,8 +117,8 @@ function requireArg(value: string | undefined, message: string): string {
 }
 
 function parseAdrStatus(value: string): AdrStatus {
-  if ((ADR_STATUS_VALUES as readonly string[]).includes(value)) {
-    return value as AdrStatus;
+  if (isAdrStatus(value)) {
+    return value;
   }
 
   throw new Error(`ADR status must be one of: ${ADR_STATUS_VALUES.join(", ")}`);
@@ -179,7 +187,7 @@ function parseNewArgs(args: readonly string[]): NewAdrCommandOptions {
 
 function parseReportArgs(
   args: readonly string[],
-  commandName: "toc" | "graph",
+  commandName: ReportCommandName,
 ): ReportCommandOptions {
   let prefix: string | undefined;
   let extension: string | undefined;
@@ -230,13 +238,27 @@ function writeAdrDirMarkerIfNeeded(
   writeFileSync(markerPath, `${directoryArgument}\n`, { flag: "wx" });
 }
 
+function requireNoArgs(commandName: string, args: readonly string[]): void {
+  if (args.length > 0) {
+    throw new Error(`${commandName} does not accept arguments.\n${usage()}`);
+  }
+}
+
+function requireAtMostArgs(
+  commandName: string,
+  args: readonly string[],
+  maxArgs: number,
+): void {
+  if (args.length > maxArgs) {
+    throw new Error(`Too many arguments for ${commandName}.\n${usage()}`);
+  }
+}
+
 function initAdrDirectory(
   runtime: AdrScriptRuntime,
   args: readonly string[],
 ): number {
-  if (args.length > 1) {
-    throw new Error(`Too many arguments for init.\n${usage()}`);
-  }
+  requireAtMostArgs("init", args, 1);
 
   const [directoryArgument] = args;
   const config = directoryArgument
@@ -356,9 +378,7 @@ function linkExistingAdrs(
 }
 
 function listAdrs(runtime: AdrScriptRuntime, args: readonly string[]): number {
-  if (args.length > 0) {
-    throw new Error(`list does not accept arguments.\n${usage()}`);
-  }
+  requireNoArgs("list", args);
 
   const config = commandConfig(runtime);
   const records = listAdrRecords(config.directory);
@@ -372,33 +392,38 @@ function listAdrs(runtime: AdrScriptRuntime, args: readonly string[]): number {
   return 0;
 }
 
+function generateReport(
+  runtime: AdrScriptRuntime,
+  args: readonly string[],
+  commandName: ReportCommandName,
+): number {
+  const options = parseReportArgs(args, commandName);
+  const config = commandConfig(runtime);
+  const records = listAdrRecords(config.directory);
+  const output =
+    commandName === "toc"
+      ? generateAdrToc(records, { linkPrefix: options.prefix })
+      : generateAdrGraph(records, {
+          linkPrefix: options.prefix,
+          linkExtension: options.extension,
+        });
+
+  runtime.stdout(output);
+  return 0;
+}
+
 function generateToc(
   runtime: AdrScriptRuntime,
   args: readonly string[],
 ): number {
-  const options = parseReportArgs(args, "toc");
-  const config = commandConfig(runtime);
-  const records = listAdrRecords(config.directory);
-
-  runtime.stdout(generateAdrToc(records, { linkPrefix: options.prefix }));
-  return 0;
+  return generateReport(runtime, args, "toc");
 }
 
 function generateGraph(
   runtime: AdrScriptRuntime,
   args: readonly string[],
 ): number {
-  const options = parseReportArgs(args, "graph");
-  const config = commandConfig(runtime);
-  const records = listAdrRecords(config.directory);
-
-  runtime.stdout(
-    generateAdrGraph(records, {
-      linkPrefix: options.prefix,
-      linkExtension: options.extension,
-    }),
-  );
-  return 0;
+  return generateReport(runtime, args, "graph");
 }
 
 function formatValidationIssue(issue: {
@@ -415,9 +440,7 @@ function validateAdrs(
   runtime: AdrScriptRuntime,
   args: readonly string[],
 ): number {
-  if (args.length > 0) {
-    throw new Error(`validate does not accept arguments.\n${usage()}`);
-  }
+  requireNoArgs("validate", args);
 
   const config = commandConfig(runtime);
   const issues = validateAdrDirectory(config.directory);
@@ -462,6 +485,18 @@ function filenameCommand(
   return 0;
 }
 
+const COMMAND_HANDLERS: Record<string, CommandHandler> = {
+  init: initAdrDirectory,
+  new: createNewAdr,
+  link: linkExistingAdrs,
+  list: listAdrs,
+  toc: generateToc,
+  graph: generateGraph,
+  validate: validateAdrs,
+  slug: slugCommand,
+  filename: filenameCommand,
+};
+
 export function runAdrScript(
   argv: readonly string[],
   options: RunAdrScriptOptions = {},
@@ -470,31 +505,17 @@ export function runAdrScript(
   const runtime = runtimeFromOptions(options);
 
   try {
-    switch (command) {
-      case undefined:
-        runtime.stdout(usage());
-        return 0;
-      case "init":
-        return initAdrDirectory(runtime, args);
-      case "new":
-        return createNewAdr(runtime, args);
-      case "link":
-        return linkExistingAdrs(runtime, args);
-      case "list":
-        return listAdrs(runtime, args);
-      case "toc":
-        return generateToc(runtime, args);
-      case "graph":
-        return generateGraph(runtime, args);
-      case "validate":
-        return validateAdrs(runtime, args);
-      case "slug":
-        return slugCommand(runtime, args);
-      case "filename":
-        return filenameCommand(runtime, args);
-      default:
-        throw new Error(`Unknown command: ${command}\n${usage()}`);
+    if (command === undefined) {
+      runtime.stdout(usage());
+      return 0;
     }
+
+    const handler = COMMAND_HANDLERS[command];
+    if (!handler) {
+      throw new Error(`Unknown command: ${command}\n${usage()}`);
+    }
+
+    return handler(runtime, args);
   } catch (error) {
     runtime.stderr(error instanceof Error ? error.message : String(error));
     return 1;
