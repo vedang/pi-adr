@@ -141,6 +141,38 @@ function expectedProjectTemplateAdr(number: number, title: string): string {
     .replace("STATUS", "Accepted");
 }
 
+function expectedDefaultAdrSuperseding(
+  number: number,
+  title: string,
+  supersededAdr: DefaultAdrCase,
+): string {
+  return `# ${number}. ${title}
+
+Date: ${TEST_DATE}
+
+## Status
+
+Accepted
+
+Supersedes [${supersededAdr.number}. ${supersededAdr.title}](${supersededAdr.filename})
+
+## Context
+
+## Decision
+
+## Consequences
+`;
+}
+
+function expectedInitialAdrSupersededBy(
+  replacementAdr: DefaultAdrCase,
+): string {
+  return EXPECTED_INITIAL_ADR.replace(
+    "Accepted",
+    `Superseded by [${replacementAdr.number}. ${replacementAdr.title}](${replacementAdr.filename})`,
+  );
+}
+
 function expectedListRows(cases: readonly DefaultAdrCase[]): string[] {
   return [
     INITIAL_ADR_LIST_ROW,
@@ -289,6 +321,48 @@ describe("ADR workflows", () => {
     expect(runScript(root, ["list"])).toEqual({
       code: 0,
       stdout: expectedListRows([USE_POSTGRESQL_ADR]),
+      stderr: [],
+    });
+  });
+
+  it("supersedes an existing ADR during record creation", () => {
+    const root = makeTempRoot();
+    const createdAdrPath = adrPath(root, USE_POSTGRESQL_ADR.filename);
+
+    expect(runScript(root, ["init"])).toMatchObject({ code: 0 });
+
+    expect(
+      runScript(root, [
+        "new",
+        "--supersedes",
+        String(1),
+        USE_POSTGRESQL_ADR.title,
+      ]),
+    ).toEqual({
+      code: 0,
+      stdout: [createdAdrPath],
+      stderr: [],
+    });
+    expect(readFileSync(initialAdrPath(root), "utf8")).toBe(
+      expectedInitialAdrSupersededBy(USE_POSTGRESQL_ADR),
+    );
+    expect(readFileSync(createdAdrPath, "utf8")).toBe(
+      expectedDefaultAdrSuperseding(
+        USE_POSTGRESQL_ADR.number,
+        USE_POSTGRESQL_ADR.title,
+        {
+          number: 1,
+          title: "Record architecture decisions",
+          filename: INITIAL_ADR_FILENAME,
+        },
+      ),
+    );
+    expect(runScript(root, ["list"])).toEqual({
+      code: 0,
+      stdout: [
+        `1\tSuperseded\t${INITIAL_ADR_FILENAME}\tRecord architecture decisions`,
+        `${USE_POSTGRESQL_ADR.number}\tAccepted\t${USE_POSTGRESQL_ADR.filename}\t${USE_POSTGRESQL_ADR.title}`,
+      ],
       stderr: [],
     });
   });
