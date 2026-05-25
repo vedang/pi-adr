@@ -3,17 +3,14 @@
   "version": "0.1.0",
   "description": "Create and maintain Architecture Decision Records with pi.",
   "type": "module",
-  "main": "./dist/index.js",
   "keywords": [
     "pi-package",
     "pi",
-    "extension",
     "skill",
     "adr",
     "architecture-decision-records"
   ],
   "pi": {
-    "extensions": ["./src/index.ts"],
     "skills": ["./skills"]
   },
   "scripts": {
@@ -24,12 +21,8 @@
     "test:watch": "vitest --config vitest.config.unit.ts",
     "test:coverage": "vitest run --config vitest.config.unit.ts --coverage"
   },
-  "peerDependencies": {
-    "@mariozechner/pi-coding-agent": "*"
-  },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@mariozechner/pi-coding-agent": "^0.65.2",
     "@types/node": "^24.3.0",
     "@vitest/coverage-v8": "^3.2.4",
     "jscpd": "^4.0.8",

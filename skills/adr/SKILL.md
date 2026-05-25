@@ -7,15 +7,15 @@ description: Create, review, update, query, and maintain Architecture Decision R
 
 Use this skill to help humans and agents create maintainable Architecture Decision Records.
 
-## Quick reference
+## When to load resources
 
-| Task | Approach |
+| Need | Resource |
 | --- | --- |
-| Draft/review ADR prose | Read `references/nygard-adr-format.md` first |
-| Work with existing adr-tools logs | Read `references/adr-tools-compatibility.md` first |
-| Need original source article | Read `references/cognitect-documenting-architecture-decisions.md` |
-| Need template text | Use `assets/default-template.md` or `assets/initial-adr-template.md` |
-| Need safe filename helpers | Run `bun run adr slug ...` from package root or `scripts/adr.ts slug ...` from skill root |
+| ADR prose guidance | `references/nygard-adr-format.md` |
+| Existing adr-tools logs | `references/adr-tools-compatibility.md` |
+| Original source article | `references/cognitect-documenting-architecture-decisions.md` |
+| Copyable templates | `assets/default-template.md`, `assets/initial-adr-template.md` |
+| Safe slug/filename generation | `bun run adr slug ...`, `bun run adr filename ...` from package root |
 
 ## Workflow
 
@@ -23,7 +23,7 @@ Use this skill to help humans and agents create maintainable Architecture Decisi
 2. Locate ADR directory using existing project convention: `.adr-dir` wins, then `doc/adr`, then ask before creating a new location.
 3. Inspect existing ADRs for numbering, status style, templates, and spelling conventions.
 4. For new ADRs, capture one decision only. Ask at most 1-3 clarifying questions when context, decision, status, or consequences are unclear.
-5. Prefer deterministic scripts for numbering, filenames, validation, and link rewrites. Use agent judgment for decision framing and prose quality.
+5. Use `bun run adr slug ...` or `bun run adr filename ...` for safe adr-tools-compatible names. For link/status edits, inspect existing ADRs and update Markdown deliberately until fuller automation exists.
 6. Summarize path, title, status, links, and assumptions after writing or updating ADRs.
 
 ## Writing rules
@@ -35,15 +35,7 @@ Use this skill to help humans and agents create maintainable Architecture Decisi
 - Include positive, negative, and neutral `Consequences`.
 - Preserve superseded/rejected decisions; never delete rationale history.
 
-## References and scripts
-
-Load references only when needed:
-
-- `references/nygard-adr-format.md`: ADR philosophy, section guidance, and prose quality rules.
-- `references/adr-tools-compatibility.md`: directory discovery, numbering, filename, template, link, status, TOC, and graph compatibility.
-- `references/cognitect-documenting-architecture-decisions.md`: local copy of Michael Nygard's source article.
-
-Helper commands:
+## Helper commands
 
 ```bash
 # From package root
