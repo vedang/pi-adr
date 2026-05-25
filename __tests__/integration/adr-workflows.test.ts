@@ -9,6 +9,7 @@ const TEST_DATE = "2026-05-25";
 const INITIAL_ADR_FILENAME = "0001-record-architecture-decisions.md";
 const INITIAL_ADR_LIST_ROW =
   "1\tAccepted\t0001-record-architecture-decisions.md\tRecord architecture decisions";
+const ALTERNATIVE_ADR_DIRECTORY = "architecture/decisions";
 const EXPECTED_INITIAL_ADR = `# 1. Record architecture decisions
 
 Date: ${TEST_DATE}
@@ -178,6 +179,48 @@ describe("ADR workflows", () => {
 
   it("creates multiple records with monotonic numbering", () => {
     expectDefaultAdrWorkflow(NEW_ADR_CASES);
+  });
+
+  it("creates records in an alternative ADR directory", () => {
+    const root = makeTempRoot();
+    const initialPath = path.join(
+      root,
+      ALTERNATIVE_ADR_DIRECTORY,
+      INITIAL_ADR_FILENAME,
+    );
+    const createdPath = path.join(
+      root,
+      ALTERNATIVE_ADR_DIRECTORY,
+      "0002-use-postgresql.md",
+    );
+
+    expect(runScript(root, ["init", ALTERNATIVE_ADR_DIRECTORY])).toEqual({
+      code: 0,
+      stdout: [initialPath],
+      stderr: [],
+    });
+    expect(readFileSync(path.join(root, ".adr-dir"), "utf8")).toBe(
+      `${ALTERNATIVE_ADR_DIRECTORY}\n`,
+    );
+    expect(existsSync(path.join(root, "doc", "adr"))).toBe(false);
+    expect(readFileSync(initialPath, "utf8")).toBe(EXPECTED_INITIAL_ADR);
+
+    expect(runScript(root, ["new", "Use PostgreSQL"])).toEqual({
+      code: 0,
+      stdout: [createdPath],
+      stderr: [],
+    });
+    expect(readFileSync(createdPath, "utf8")).toBe(
+      expectedDefaultAdr(2, "Use PostgreSQL"),
+    );
+    expect(runScript(root, ["list"])).toEqual({
+      code: 0,
+      stdout: [
+        INITIAL_ADR_LIST_ROW,
+        "2\tAccepted\t0002-use-postgresql.md\tUse PostgreSQL",
+      ],
+      stderr: [],
+    });
   });
 
   it("slugifies funny title characters during record creation", () => {
