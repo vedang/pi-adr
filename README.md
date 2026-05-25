@@ -52,18 +52,22 @@ The skill guides the agent to:
 
 ## Helper commands
 
-Current helper commands cover deterministic slug and filename generation:
+Skill-local commands cover deterministic ADR file operations:
 
 ```bash
+bun run adr init [directory]
+bun run adr new [--status STATUS] [--supersedes REF]... [--link "REF:LINK:REVERSE"]... "Use PostgreSQL"
+bun run adr link SOURCE LINK TARGET "REVERSE LINK"
+bun run adr list
+bun run adr toc [--prefix PREFIX]
+bun run adr graph [--prefix PREFIX] [--extension EXT]
+bun run adr validate
 bun run adr slug "Use PostgreSQL for transactional data"
-# use-postgresql-for-transactional-data
-
 bun run adr filename 1 "Use PostgreSQL for transactional data"
-# 0001-use-postgresql-for-transactional-data.md
 ```
 
-These helpers are intentionally small. Fuller create, link, validate, and report
-commands are planned under `skills/adr/scripts/lib/`.
+Commands print created paths or report content on stdout. Validation errors print
+`path[:line]: message` diagnostics on stderr and exit non-zero.
 
 ## Package shape
 
@@ -78,7 +82,8 @@ skills/adr/
 │   ├── cognitect-documenting-architecture-decisions.md
 │   └── nygard-adr-format.md
 └── scripts/
-    └── adr.ts
+    ├── adr.ts
+    └── lib/
 ```
 
 - `SKILL.md` is the primary agent interface.
@@ -109,9 +114,8 @@ It is designed to work with common `adr-tools` conventions:
 - Markdown links in status sections.
 
 Compatibility note: old `adr-tools` records may use the historical spellings
-`Supercedes` and `Superceded`. The skill references document this mismatch and
-future automation should parse both spellings while emitting standard
-`supersedes`/`superseded` wording.
+`Supercedes` and `Superceded`. Automation parses both spellings and emits
+standard `Supersedes`/`Superseded by` status links for new supersession updates.
 
 ## Development
 

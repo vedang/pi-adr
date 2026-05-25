@@ -20,6 +20,8 @@ const ADR_DATE_PATTERN = /^Date:\s*(\d{4}-\d{2}-\d{2})\s*$/m;
 const ADR_STATUS_HEADING_PATTERN = /^##\s*Status\s*$/;
 const HEADING_PATTERN = /^#{1,6}\s+/;
 const MARKDOWN_LINK_PATTERN = /\[([^\]]+)\]\(([^)]+)\)/g;
+const SUPERSEDED_BY_LINK_PATTERN =
+  /^Super(?:s|c)eded by\s+\[[^\]]+\]\([^)]+\)$/;
 
 const ADR_LINK_RELATIONSHIP_LABELS: ReadonlySet<string> = new Set(
   Object.values(ADR_LINK_RELATIONSHIP_MAP).flatMap(({ forward, reverse }) => [
@@ -88,7 +90,13 @@ function parseAdrStatus(markdown: string): AdrStatus | null {
     return null;
   }
 
-  return isAdrStatusValue(firstNonEmptyLine) ? firstNonEmptyLine : null;
+  if (isAdrStatusValue(firstNonEmptyLine)) {
+    return firstNonEmptyLine;
+  }
+
+  return SUPERSEDED_BY_LINK_PATTERN.test(firstNonEmptyLine)
+    ? "Superseded"
+    : null;
 }
 
 function parseAdrHeading(markdown: string): {

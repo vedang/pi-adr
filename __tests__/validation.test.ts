@@ -76,6 +76,21 @@ describe("ADR validation", () => {
           "Supersedes [1. Record decisions](0001-record-decisions.md)",
       }),
     );
+    writeAdr(
+      directory,
+      "0003-replace-postgresql.md",
+      adrMarkdown(3, "Replace PostgreSQL", {
+        status: "Superceded by [4. Use CockroachDB](0004-use-cockroachdb.md)",
+      }),
+    );
+    writeAdr(
+      directory,
+      "0004-use-cockroachdb.md",
+      adrMarkdown(4, "Use CockroachDB", {
+        extraStatus:
+          "Supercedes [3. Replace PostgreSQL](0003-replace-postgresql.md)",
+      }),
+    );
 
     expect(validateAdrDirectory(directory)).toEqual([]);
   });

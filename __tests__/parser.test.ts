@@ -97,6 +97,33 @@ describe("ADR markdown parser", () => {
     });
   });
 
+  it("maps superseded-by status links to Superseded status", () => {
+    const content = `# 1. Use SQLite
+
+Date: 2026-05-25
+
+## Status
+
+Superseded by [2. Use PostgreSQL](0002-use-postgresql.md)
+
+## Context
+
+Need storage.
+`;
+
+    expect(
+      parseAdrMarkdown("/repo/doc/adr/0001-use-sqlite.md", content),
+    ).toMatchObject({
+      status: "Superseded",
+      links: [
+        expect.objectContaining({
+          relationship: "Superseded by",
+          targetNumber: 2,
+        }),
+      ],
+    });
+  });
+
   it("keeps unknown statuses and missing dates nullable", () => {
     const content =
       "# 2. Try queues\n\n## Status\n\nConsidering\n\n## Context\n\nNeed async work.\n";

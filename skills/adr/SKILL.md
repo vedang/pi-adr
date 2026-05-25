@@ -15,7 +15,7 @@ Use this skill to help humans and agents create maintainable Architecture Decisi
 | Existing adr-tools logs | `references/adr-tools-compatibility.md` |
 | Original source article | `references/cognitect-documenting-architecture-decisions.md` |
 | Copyable templates | `assets/default-template.md`, `assets/initial-adr-template.md` |
-| Safe slug/filename generation | `bun run adr slug ...`, `bun run adr filename ...` from package root |
+| Safe ADR file operations | `bun run adr init/new/link/list/toc/graph/validate/slug/filename ...` from package root |
 
 ## Workflow
 
@@ -23,7 +23,7 @@ Use this skill to help humans and agents create maintainable Architecture Decisi
 2. Locate ADR directory using existing project convention: `.adr-dir` wins, then `doc/adr`, then ask before creating a new location.
 3. Inspect existing ADRs for numbering, status style, templates, and spelling conventions.
 4. For new ADRs, capture one decision only. Ask at most 1-3 clarifying questions when context, decision, status, or consequences are unclear.
-5. Use `bun run adr slug ...` or `bun run adr filename ...` for safe adr-tools-compatible names. For link/status edits, inspect existing ADRs and update Markdown deliberately until fuller automation exists.
+5. Use `bun run adr ...` for deterministic init, create, link, list, report, validate, slug, and filename operations. Inspect generated prose and status links before summarizing.
 6. Summarize path, title, status, links, and assumptions after writing or updating ADRs.
 
 ## Writing rules
@@ -39,10 +39,16 @@ Use this skill to help humans and agents create maintainable Architecture Decisi
 
 ```bash
 # From package root
+bun run adr init [directory]
+bun run adr new [--status STATUS] [--supersedes REF]... [--link "REF:LINK:REVERSE"]... "Use PostgreSQL"
+bun run adr link SOURCE LINK TARGET "REVERSE LINK"
+bun run adr list
+bun run adr toc [--prefix PREFIX]
+bun run adr graph [--prefix PREFIX] [--extension EXT]
+bun run adr validate
 bun run adr slug "Use PostgreSQL for transactional data"
 bun run adr filename 1 "Use PostgreSQL for transactional data"
 
 # From this skill directory
-bun run scripts/adr.ts slug "Use PostgreSQL for transactional data"
-bun run scripts/adr.ts filename 1 "Use PostgreSQL for transactional data"
+bun run scripts/adr.ts validate
 ```

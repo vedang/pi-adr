@@ -26,6 +26,8 @@ interface SectionBounds {
 const ADR_HEADING_PATTERN = /^#\s*(\d+)\.\s*(.+)\s*$/;
 const DATE_PATTERN = /^Date:\s*(.*)\s*$/;
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const SUPERSEDED_BY_LINK_PATTERN =
+  /^Super(?:s|c)eded by\s+\[[^\]]+\]\([^)]+\)$/;
 const HEADING_PATTERN = /^#{1,6}\s+/;
 const REQUIRED_SECTIONS = [
   "Status",
@@ -35,8 +37,11 @@ const REQUIRED_SECTIONS = [
 ] as const;
 const STATUS_VALUES = ADR_STATUS_VALUES.join(", ");
 
-function isAdrStatusValue(value: string): boolean {
-  return (ADR_STATUS_VALUES as readonly string[]).includes(value);
+function isAdrStatusLine(value: string): boolean {
+  return (
+    (ADR_STATUS_VALUES as readonly string[]).includes(value) ||
+    SUPERSEDED_BY_LINK_PATTERN.test(value)
+  );
 }
 
 function issue(
@@ -267,7 +272,7 @@ function validateStructure(entry: AdrValidationEntry): AdrValidationIssue[] {
         statusSection.headerLine,
       ),
     );
-  } else if (!isAdrStatusValue(statusLine.value)) {
+  } else if (!isAdrStatusLine(statusLine.value)) {
     issues.push(
       issue(
         entry.filePath,
