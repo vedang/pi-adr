@@ -107,7 +107,7 @@ function parseAdrHeading(markdown: string): {
   };
 }
 
-export function parseAdrStatusLinks(statusText: string): AdrLink[] {
+function parseAdrStatusLinks(statusText: string): AdrLink[] {
   const lines = statusText.split(/\r?\n/);
   const links: AdrLink[] = [];
 

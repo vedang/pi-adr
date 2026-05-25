@@ -1,6 +1,6 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import type { AdrRecord } from "../skills/adr/scripts/lib/model";
+import type { AdrLink, AdrRecord } from "../skills/adr/scripts/lib/model";
 import {
   generateAdrGraph,
   generateAdrToc,
@@ -10,7 +10,7 @@ function adrRecord(
   number: number,
   title: string,
   filename: string,
-  statusText = "Accepted",
+  links: readonly AdrLink[] = [],
 ): AdrRecord {
   return {
     number,
@@ -19,9 +19,18 @@ function adrRecord(
     filePath: path.join("doc", "adr", filename),
     date: "2026-05-25",
     status: "Accepted",
-    statusText,
-    links: [],
+    statusText: "Accepted",
+    links,
     rawContent: "",
+  };
+}
+
+function adrLink(relationship: string, targetNumber: number): AdrLink {
+  return {
+    relationship,
+    targetHref: `000${targetNumber}-target.md`,
+    targetNumber,
+    rawMarkdown: "",
   };
 }
 
@@ -59,18 +68,13 @@ describe("ADR reports", () => {
   it("generates Graphviz DOT with sequential and relationship edges", () => {
     const records = [
       adrRecord(1, "Record decisions", "0001-record-decisions.md"),
-      adrRecord(
-        2,
-        "Use PostgreSQL",
-        "0002-use-postgresql.md",
-        "Accepted\n\nSupersedes [1. Record decisions](0001-record-decisions.md)",
-      ),
-      adrRecord(
-        3,
-        "Use read replicas",
-        "0003-use-read-replicas.md",
-        "Accepted\n\nClarifies [2. Use PostgreSQL](0002-use-postgresql.md)\nClarified by [4. Archive cold data](0004-archive-cold-data.md)",
-      ),
+      adrRecord(2, "Use PostgreSQL", "0002-use-postgresql.md", [
+        adrLink("Supersedes", 1),
+      ]),
+      adrRecord(3, "Use read replicas", "0003-use-read-replicas.md", [
+        adrLink("Clarifies", 2),
+        adrLink("Clarified by", 4),
+      ]),
     ];
 
     expect(generateAdrGraph(records)).toBe(`digraph {

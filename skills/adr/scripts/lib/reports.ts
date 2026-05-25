@@ -1,7 +1,4 @@
-import path from "node:path";
-
-import type { AdrLink, AdrRecord } from "./model";
-import { parseAdrStatusLinks } from "./parser";
+import type { AdrRecord } from "./model";
 
 interface ReportOptions {
   readonly linkPrefix?: string;
@@ -22,24 +19,6 @@ function replaceExtension(filename: string, extension: string): string {
 
 function isForwardRelationship(relationship: string): boolean {
   return !/\sby$/i.test(relationship);
-}
-
-function getRecordLinks(record: AdrRecord): readonly AdrLink[] {
-  return record.links.length > 0
-    ? record.links
-    : parseAdrStatusLinks(record.statusText);
-}
-
-function resolveTargetNumber(
-  link: AdrLink,
-  recordsByFilename: ReadonlyMap<string, AdrRecord>,
-): number | null {
-  if (link.targetNumber !== undefined) {
-    return link.targetNumber;
-  }
-
-  const targetFilename = path.basename(link.targetHref);
-  return recordsByFilename.get(targetFilename)?.number ?? null;
 }
 
 export function generateAdrToc(
@@ -66,12 +45,7 @@ export function generateAdrGraph(
   const linkExtension = options?.linkExtension ?? ".html";
 
   const sortedRecords = sortByNumber(records);
-  const recordByNumber = new Map<number, AdrRecord>();
-  const recordByFilename = new Map<string, AdrRecord>();
-  for (const record of sortedRecords) {
-    recordByNumber.set(record.number, record);
-    recordByFilename.set(record.filename, record);
-  }
+  const recordNumbers = new Set(sortedRecords.map((record) => record.number));
 
   const lines: string[] = ["digraph {", "  node [shape=plaintext];"];
 
@@ -92,18 +66,14 @@ export function generateAdrGraph(
   const addedEdges = new Set<string>();
 
   for (const sourceRecord of sortedRecords) {
-    for (const link of getRecordLinks(sourceRecord)) {
+    for (const link of sourceRecord.links) {
       const relationship = link.relationship;
       if (!isForwardRelationship(relationship)) {
         continue;
       }
 
-      const targetNumber = resolveTargetNumber(link, recordByFilename);
-      if (targetNumber === null) {
-        continue;
-      }
-
-      if (!recordByNumber.has(targetNumber)) {
+      const targetNumber = link.targetNumber;
+      if (targetNumber === undefined || !recordNumbers.has(targetNumber)) {
         continue;
       }
 
