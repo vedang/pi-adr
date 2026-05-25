@@ -3,21 +3,18 @@ import {
   ADR_LINK_RELATIONSHIPS,
   ADR_STATUS_VALUES,
   ADR_TEMPLATE_PLACEHOLDERS,
-  ADR_TOOLS_COMPAT_LINK_RELATIONSHIPS,
   DEFAULT_ADR_DIRECTORY,
   DEFAULT_ADR_STATUS,
 } from "../skills/adr/scripts/lib/model";
 import type {
   AdrLink,
-  AdrLinkDirection,
-  AdrLinkRelationship,
   AdrRecord,
   AdrRepositoryConfig,
   AdrTemplateValues,
 } from "../skills/adr/scripts/lib/model";
 
 describe("ADR model", () => {
-  it("defines default adr-tools-compatible repository conventions", () => {
+  it("defines ADR conventions as runtime constants", () => {
     expect(DEFAULT_ADR_DIRECTORY).toBe("doc/adr");
     expect(DEFAULT_ADR_STATUS).toBe("Accepted");
     expect(ADR_STATUS_VALUES).toEqual([
@@ -27,33 +24,33 @@ describe("ADR model", () => {
       "Deprecated",
       "Superseded",
     ]);
-  });
-
-  it("keeps standard and adr-tools supersede spellings explicit", () => {
-    const relationship: AdrLinkRelationship = "supersedes";
-    const direction: AdrLinkDirection = "forward";
-
-    expect(relationship).toBe("supersedes");
-    expect(direction).toBe("forward");
-    expect(ADR_LINK_RELATIONSHIPS.supersedes).toEqual({
-      forward: "Supersedes",
-      reverse: "Superseded by",
+    expect(ADR_LINK_RELATIONSHIPS).toMatchObject({
+      supersedes: {
+        forward: "Supersedes",
+        reverse: "Superseded by",
+      },
+      supercedes: {
+        forward: "Supercedes",
+        reverse: "Superceded by",
+      },
     });
-    expect(ADR_TOOLS_COMPAT_LINK_RELATIONSHIPS.supercedes).toEqual({
-      forward: "Supercedes",
-      reverse: "Superceded by",
-    });
+    expect(ADR_TEMPLATE_PLACEHOLDERS).toEqual([
+      "NUMBER",
+      "TITLE",
+      "DATE",
+      "STATUS",
+    ]);
   });
 
   it("models parsed ADRs without losing raw status or content", () => {
-    const link: AdrLink = {
+    const link = {
       relationship: "Superseded by",
       targetHref: "0002-use-postgresql.md",
       targetNumber: 2,
       targetTitle: "Use PostgreSQL",
       rawMarkdown: "Superseded by [2. Use PostgreSQL](0002-use-postgresql.md)",
-    };
-    const record: AdrRecord = {
+    } satisfies AdrLink;
+    const record = {
       number: 1,
       title: "Record architecture decisions",
       filename: "0001-record-architecture-decisions.md",
@@ -64,23 +61,23 @@ describe("ADR model", () => {
       links: [link],
       rawContent:
         "# 1. Record architecture decisions\n\n## Status\n\nSuperseded by [2. Use PostgreSQL](0002-use-postgresql.md)\n",
-    };
-    const config: AdrRepositoryConfig = {
+    } satisfies AdrRecord;
+    const config = {
       cwd: "/repo",
       directory: "/repo/doc/adr",
-      defaultStatus: "Accepted",
-    };
-    const templateValues: AdrTemplateValues = {
+      defaultStatus: DEFAULT_ADR_STATUS,
+    } satisfies AdrRepositoryConfig;
+    const templateValues = {
       NUMBER: "1",
-      TITLE: "Record architecture decisions",
+      TITLE: record.title,
       DATE: "2026-05-25",
-      STATUS: "Accepted",
-    };
+      STATUS: DEFAULT_ADR_STATUS,
+    } satisfies AdrTemplateValues;
 
     expect(record.status).toBeNull();
     expect(record.statusText).toContain("Superseded by");
     expect(record.links).toEqual([link]);
     expect(config.directory.endsWith(DEFAULT_ADR_DIRECTORY)).toBe(true);
-    expect(Object.keys(templateValues)).toEqual([...ADR_TEMPLATE_PLACEHOLDERS]);
+    expect(templateValues.STATUS).toBe(DEFAULT_ADR_STATUS);
   });
 });

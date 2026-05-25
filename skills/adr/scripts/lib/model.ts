@@ -1,5 +1,4 @@
 export const DEFAULT_ADR_DIRECTORY = "doc/adr";
-export const DEFAULT_ADR_STATUS = "Accepted";
 
 export const ADR_STATUS_VALUES = [
   "Proposed",
@@ -11,10 +10,16 @@ export const ADR_STATUS_VALUES = [
 
 export type AdrStatus = (typeof ADR_STATUS_VALUES)[number];
 
+export const DEFAULT_ADR_STATUS = "Accepted" satisfies AdrStatus;
+
 export const ADR_LINK_RELATIONSHIPS = {
   supersedes: {
     forward: "Supersedes",
     reverse: "Superseded by",
+  },
+  supercedes: {
+    forward: "Supercedes",
+    reverse: "Superceded by",
   },
   amends: {
     forward: "Amends",
@@ -25,19 +30,6 @@ export const ADR_LINK_RELATIONSHIPS = {
     reverse: "Clarified by",
   },
 } as const;
-
-export const ADR_TOOLS_COMPAT_LINK_RELATIONSHIPS = {
-  supercedes: {
-    forward: "Supercedes",
-    reverse: "Superceded by",
-  },
-} as const;
-
-export type AdrLinkRelationship =
-  | keyof typeof ADR_LINK_RELATIONSHIPS
-  | keyof typeof ADR_TOOLS_COMPAT_LINK_RELATIONSHIPS;
-
-export type AdrLinkDirection = "forward" | "reverse";
 
 export interface AdrLink {
   readonly relationship: string;
@@ -74,5 +66,7 @@ export const ADR_TEMPLATE_PLACEHOLDERS = [
   "STATUS",
 ] as const;
 
-export type AdrTemplatePlaceholder = (typeof ADR_TEMPLATE_PLACEHOLDERS)[number];
-export type AdrTemplateValues = Record<AdrTemplatePlaceholder, string>;
+export type AdrTemplateValues = Record<
+  (typeof ADR_TEMPLATE_PLACEHOLDERS)[number],
+  string
+>;
