@@ -185,6 +185,13 @@ ${statusLinks}
 `;
 }
 
+function expectedAdrWithStatusLink(content: string, linkLine: string): string {
+  return content.replace(
+    "\nAccepted\n\n## Context",
+    `\nAccepted\n\n${linkLine}\n\n## Context`,
+  );
+}
+
 function expectedAdrSupersededBy(
   content: string,
   replacementAdr: DefaultAdrCase,
@@ -458,6 +465,54 @@ describe("ADR workflows", () => {
         ),
         expectedListRow(USE_POSTGRESQL_REPLACEMENT_ADR),
       ],
+      stderr: [],
+    });
+  });
+
+  it("links existing ADRs bidirectionally", () => {
+    const root = makeTempRoot();
+    const adrDirectory = path.join(root, DEFAULT_ADR_DIRECTORY);
+
+    expect(runScript(root, ["init"])).toMatchObject({ code: 0 });
+    expectDefaultAdrCreation(root, [USE_POSTGRESQL_ADR]);
+
+    expect(
+      runScript(root, [
+        "link",
+        String(USE_POSTGRESQL_ADR.number),
+        "Amends",
+        String(INITIAL_ADR_CASE.number),
+        "Amended by",
+      ]),
+    ).toEqual({
+      code: 0,
+      stdout: [
+        `${USE_POSTGRESQL_ADR.filename} Amends ${INITIAL_ADR_CASE.filename}`,
+      ],
+      stderr: [],
+    });
+    expect(
+      readFileSync(adrPath(root, USE_POSTGRESQL_ADR.filename), "utf8"),
+    ).toBe(
+      expectedAdrWithStatusLink(
+        expectedDefaultAdr(USE_POSTGRESQL_ADR.number, USE_POSTGRESQL_ADR.title),
+        `Amends [${INITIAL_ADR_CASE.number}. ${INITIAL_ADR_CASE.title}](${INITIAL_ADR_CASE.filename})`,
+      ),
+    );
+    expect(readFileSync(initialAdrPath(root), "utf8")).toBe(
+      expectedAdrWithStatusLink(
+        EXPECTED_INITIAL_ADR,
+        `Amended by [${USE_POSTGRESQL_ADR.number}. ${USE_POSTGRESQL_ADR.title}](${USE_POSTGRESQL_ADR.filename})`,
+      ),
+    );
+    expect(runScript(root, ["list"])).toEqual({
+      code: 0,
+      stdout: expectedListRows([USE_POSTGRESQL_ADR]),
+      stderr: [],
+    });
+    expect(runScript(root, ["validate"])).toEqual({
+      code: 0,
+      stdout: [`ADR validation passed: ${adrDirectory}`],
       stderr: [],
     });
   });
