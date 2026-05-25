@@ -3,8 +3,6 @@
 import { pathToFileURL } from "node:url";
 import { formatAdrFilename, slugifyAdrTitle } from "./lib/slug";
 
-export { formatAdrFilename, slugifyAdrTitle } from "./lib/slug";
-
 function usage(): string {
   return `Usage:
   adr.ts slug <title...>

@@ -1,4 +1,4 @@
-export const FALLBACK_ADR_SLUG = "adr";
+const FALLBACK_ADR_SLUG = "adr";
 
 export function slugifyAdrTitle(title: string): string {
   const slug = title

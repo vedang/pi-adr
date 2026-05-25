@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  FALLBACK_ADR_SLUG,
   formatAdrFilename,
   slugifyAdrTitle,
 } from "../skills/adr/scripts/lib/slug";
@@ -15,7 +14,7 @@ describe("ADR slug helpers", () => {
   });
 
   it("falls back when a title has no alphanumeric characters", () => {
-    expect(slugifyAdrTitle("---")).toBe(FALLBACK_ADR_SLUG);
+    expect(slugifyAdrTitle("---")).toBe("adr");
   });
 
   it("formats zero-padded ADR filenames", () => {
