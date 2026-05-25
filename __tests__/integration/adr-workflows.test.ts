@@ -15,9 +15,13 @@ import { runAdrScript } from "../../skills/adr/scripts/adr";
 const TEST_DATE = "2026-05-25";
 const DEFAULT_ADR_DIRECTORY = "doc/adr";
 const ALTERNATIVE_ADR_DIRECTORY = "architecture/decisions";
+const INITIAL_ADR_TITLE = "Record architecture decisions";
 const INITIAL_ADR_FILENAME = "0001-record-architecture-decisions.md";
-const INITIAL_ADR_LIST_ROW =
-  "1\tAccepted\t0001-record-architecture-decisions.md\tRecord architecture decisions";
+const INITIAL_ADR_CASE = {
+  number: 1,
+  title: INITIAL_ADR_TITLE,
+  filename: INITIAL_ADR_FILENAME,
+} as const;
 const PROJECT_ADR_TEMPLATE = `# NUMBER. TITLE
 
 Date: DATE
@@ -38,7 +42,7 @@ Describe the project-specific decision here.
 
 Describe project-specific outcomes here.
 `;
-const EXPECTED_INITIAL_ADR = `# 1. Record architecture decisions
+const EXPECTED_INITIAL_ADR = `# ${INITIAL_ADR_CASE.number}. ${INITIAL_ADR_CASE.title}
 
 Date: ${TEST_DATE}
 
@@ -173,12 +177,17 @@ function expectedInitialAdrSupersededBy(
   );
 }
 
+function expectedListRow(
+  { number, filename, title }: DefaultAdrCase,
+  status = "Accepted",
+): string {
+  return [number, status, filename, title].join("\t");
+}
+
 function expectedListRows(cases: readonly DefaultAdrCase[]): string[] {
   return [
-    INITIAL_ADR_LIST_ROW,
-    ...cases.map(({ number, filename, title }) =>
-      [number, "Accepted", filename, title].join("\t"),
-    ),
+    expectedListRow(INITIAL_ADR_CASE),
+    ...cases.map((adrCase) => expectedListRow(adrCase)),
   ];
 }
 
@@ -350,18 +359,14 @@ describe("ADR workflows", () => {
       expectedDefaultAdrSuperseding(
         USE_POSTGRESQL_ADR.number,
         USE_POSTGRESQL_ADR.title,
-        {
-          number: 1,
-          title: "Record architecture decisions",
-          filename: INITIAL_ADR_FILENAME,
-        },
+        INITIAL_ADR_CASE,
       ),
     );
     expect(runScript(root, ["list"])).toEqual({
       code: 0,
       stdout: [
-        `1\tSuperseded\t${INITIAL_ADR_FILENAME}\tRecord architecture decisions`,
-        `${USE_POSTGRESQL_ADR.number}\tAccepted\t${USE_POSTGRESQL_ADR.filename}\t${USE_POSTGRESQL_ADR.title}`,
+        expectedListRow(INITIAL_ADR_CASE, "Superseded"),
+        expectedListRow(USE_POSTGRESQL_ADR),
       ],
       stderr: [],
     });
