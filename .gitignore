@@ -5,3 +5,4 @@ coverage/
 *.tsbuildinfo
 .agents/plans/
 .pi/extensions/adr.json
+.pi/extensions/simplify-code.json
