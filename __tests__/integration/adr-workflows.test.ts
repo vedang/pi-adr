@@ -4,6 +4,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -17,6 +18,26 @@ const ALTERNATIVE_ADR_DIRECTORY = "architecture/decisions";
 const INITIAL_ADR_FILENAME = "0001-record-architecture-decisions.md";
 const INITIAL_ADR_LIST_ROW =
   "1\tAccepted\t0001-record-architecture-decisions.md\tRecord architecture decisions";
+const PROJECT_ADR_TEMPLATE = `# NUMBER. TITLE
+
+Date: DATE
+
+## Status
+
+STATUS
+
+## Context
+
+Describe project-specific forces here.
+
+## Decision
+
+Describe the project-specific decision here.
+
+## Consequences
+
+Describe project-specific outcomes here.
+`;
 const EXPECTED_INITIAL_ADR = `# 1. Record architecture decisions
 
 Date: ${TEST_DATE}
@@ -113,6 +134,29 @@ Accepted
 `;
 }
 
+function expectedProjectTemplateAdr(number: number, title: string): string {
+  return `# ${number}. ${title}
+
+Date: ${TEST_DATE}
+
+## Status
+
+Accepted
+
+## Context
+
+Describe project-specific forces here.
+
+## Decision
+
+Describe the project-specific decision here.
+
+## Consequences
+
+Describe project-specific outcomes here.
+`;
+}
+
 function expectedListRows(cases: readonly DefaultAdrCase[]): string[] {
   return [
     INITIAL_ADR_LIST_ROW,
@@ -151,6 +195,18 @@ function expectDefaultAdrWorkflow(cases: readonly DefaultAdrCase[]): void {
     stdout: expectedListRows(cases),
     stderr: [],
   });
+}
+
+function writeProjectAdrTemplate(root: string): void {
+  const templatePath = path.join(
+    root,
+    DEFAULT_ADR_DIRECTORY,
+    "templates",
+    "template.md",
+  );
+
+  mkdirSync(path.dirname(templatePath), { recursive: true });
+  writeFileSync(templatePath, PROJECT_ADR_TEMPLATE);
 }
 
 function expectAlternativeAdrDirectoryInitialized(root: string): void {
@@ -220,6 +276,31 @@ describe("ADR workflows", () => {
       root,
       [USE_POSTGRESQL_ADR],
       ALTERNATIVE_ADR_DIRECTORY,
+    );
+    expect(runScript(root, ["list"])).toEqual({
+      code: 0,
+      stdout: expectedListRows([USE_POSTGRESQL_ADR]),
+      stderr: [],
+    });
+  });
+
+  it("uses a project-specific template for new records", () => {
+    const root = makeTempRoot();
+    const createdAdrPath = adrPath(root, USE_POSTGRESQL_ADR.filename);
+
+    expect(runScript(root, ["init"])).toMatchObject({ code: 0 });
+    writeProjectAdrTemplate(root);
+
+    expect(runScript(root, ["new", USE_POSTGRESQL_ADR.title])).toEqual({
+      code: 0,
+      stdout: [createdAdrPath],
+      stderr: [],
+    });
+    expect(readFileSync(createdAdrPath, "utf8")).toBe(
+      expectedProjectTemplateAdr(
+        USE_POSTGRESQL_ADR.number,
+        USE_POSTGRESQL_ADR.title,
+      ),
     );
     expect(runScript(root, ["list"])).toEqual({
       code: 0,
