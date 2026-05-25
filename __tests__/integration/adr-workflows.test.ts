@@ -708,18 +708,16 @@ describe("ADR workflows", () => {
   });
 
   it("requires a title when creating a new ADR", () => {
-    const root = makeTempRoot();
+    const root = createDefaultAdrWorkflow([]);
 
-    expect(runScript(root, ["init"])).toMatchObject({ code: 0 });
     expect(runScript(root, ["new"])).toEqual({
       code: 1,
       stdout: [],
       stderr: ["Missing ADR title."],
     });
-    expect(existsSync(adrPath(root, "0002-.md"))).toBe(false);
     expect(runScript(root, ["list"])).toEqual({
       code: 0,
-      stdout: [expectedListRow(INITIAL_ADR_CASE)],
+      stdout: expectedListRows([]),
       stderr: [],
     });
   });
