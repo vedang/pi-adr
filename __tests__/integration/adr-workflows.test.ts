@@ -7,6 +7,8 @@ import { runAdrScript } from "../../skills/adr/scripts/adr";
 
 const TEST_DATE = "2026-05-25";
 const INITIAL_ADR_FILENAME = "0001-record-architecture-decisions.md";
+const INITIAL_ADR_LIST_ROW =
+  "1\tAccepted\t0001-record-architecture-decisions.md\tRecord architecture decisions";
 const EXPECTED_INITIAL_ADR = `# 1. Record architecture decisions
 
 Date: ${TEST_DATE}
@@ -27,6 +29,12 @@ We will record architecture decisions as numbered Markdown files in version cont
 
 Future maintainers can understand why decisions were made. The project gains a small documentation maintenance obligation. Superseded decisions remain available as historical context.
 `;
+interface DefaultAdrCase {
+  readonly number: number;
+  readonly title: string;
+  readonly filename: string;
+}
+
 const NEW_ADR_CASES = [
   {
     number: 2,
@@ -89,6 +97,45 @@ Accepted
 `;
 }
 
+function expectedListRows(cases: readonly DefaultAdrCase[]): string[] {
+  return [
+    INITIAL_ADR_LIST_ROW,
+    ...cases.map(({ number, filename, title }) =>
+      [number, "Accepted", filename, title].join("\t"),
+    ),
+  ];
+}
+
+function expectDefaultAdrCreation(
+  root: string,
+  cases: readonly DefaultAdrCase[],
+): void {
+  for (const { number, title, filename } of cases) {
+    const filePath = adrPath(root, filename);
+
+    expect(runScript(root, ["new", title])).toEqual({
+      code: 0,
+      stdout: [filePath],
+      stderr: [],
+    });
+    expect(readFileSync(filePath, "utf8")).toBe(
+      expectedDefaultAdr(number, title),
+    );
+  }
+}
+
+function expectDefaultAdrWorkflow(cases: readonly DefaultAdrCase[]): void {
+  const root = makeTempRoot();
+
+  expect(runScript(root, ["init"])).toMatchObject({ code: 0 });
+  expectDefaultAdrCreation(root, cases);
+  expect(runScript(root, ["list"])).toEqual({
+    code: 0,
+    stdout: expectedListRows(cases),
+    stderr: [],
+  });
+}
+
 function runScript(
   cwd: string,
   argv: readonly string[],
@@ -130,60 +177,10 @@ describe("ADR workflows", () => {
   });
 
   it("creates multiple records with monotonic numbering", () => {
-    const root = makeTempRoot();
-
-    expect(runScript(root, ["init"])).toMatchObject({ code: 0 });
-    for (const { number, title, filename } of NEW_ADR_CASES) {
-      const filePath = adrPath(root, filename);
-
-      expect(runScript(root, ["new", title])).toEqual({
-        code: 0,
-        stdout: [filePath],
-        stderr: [],
-      });
-      expect(readFileSync(filePath, "utf8")).toBe(
-        expectedDefaultAdr(number, title),
-      );
-    }
-
-    expect(runScript(root, ["list"])).toEqual({
-      code: 0,
-      stdout: [
-        "1\tAccepted\t0001-record-architecture-decisions.md\tRecord architecture decisions",
-        ...NEW_ADR_CASES.map(({ number, filename, title }) =>
-          [number, "Accepted", filename, title].join("\t"),
-        ),
-      ],
-      stderr: [],
-    });
+    expectDefaultAdrWorkflow(NEW_ADR_CASES);
   });
 
   it("slugifies funny title characters during record creation", () => {
-    const root = makeTempRoot();
-
-    expect(runScript(root, ["init"])).toMatchObject({ code: 0 });
-    for (const { number, title, filename } of FUNNY_TITLE_CASES) {
-      const filePath = adrPath(root, filename);
-
-      expect(runScript(root, ["new", title])).toEqual({
-        code: 0,
-        stdout: [filePath],
-        stderr: [],
-      });
-      expect(readFileSync(filePath, "utf8")).toBe(
-        expectedDefaultAdr(number, title),
-      );
-    }
-
-    expect(runScript(root, ["list"])).toEqual({
-      code: 0,
-      stdout: [
-        "1\tAccepted\t0001-record-architecture-decisions.md\tRecord architecture decisions",
-        ...FUNNY_TITLE_CASES.map(({ number, filename, title }) =>
-          [number, "Accepted", filename, title].join("\t"),
-        ),
-      ],
-      stderr: [],
-    });
+    expectDefaultAdrWorkflow(FUNNY_TITLE_CASES);
   });
 });
