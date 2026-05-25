@@ -27,6 +27,10 @@ function makeTempRoot(): string {
   return root;
 }
 
+function makeAdrDirectory(): string {
+  return path.join(makeTempRoot(), "doc", "adr");
+}
+
 function repositoryConfig(directory: string): AdrRepositoryConfig {
   return {
     cwd: path.dirname(directory),
@@ -68,7 +72,7 @@ afterEach(() => {
 
 describe("ADR repository", () => {
   it("lists ADR records sorted by number and ignores unrelated files", () => {
-    const directory = path.join(makeTempRoot(), "doc", "adr");
+    const directory = makeAdrDirectory();
     writeAdrFixture(directory, "0002-use-postgresql.md", 2, "Use PostgreSQL");
     writeAdrFixture(
       directory,
@@ -99,7 +103,7 @@ describe("ADR repository", () => {
   });
 
   it("computes the next monotonic ADR number from existing records", () => {
-    const directory = path.join(makeTempRoot(), "doc", "adr");
+    const directory = makeAdrDirectory();
     writeAdrFixture(
       directory,
       "0001-record-decisions.md",
@@ -113,7 +117,7 @@ describe("ADR repository", () => {
   });
 
   it("creates a new ADR file from the next number and default template", () => {
-    const directory = path.join(makeTempRoot(), "doc", "adr");
+    const directory = makeAdrDirectory();
 
     const record = createAdrRecord({
       config: repositoryConfig(directory),
@@ -131,7 +135,7 @@ describe("ADR repository", () => {
     });
     expect(readFileSync(record.filePath, "utf8")).toBe(`# 1. Use PostgreSQL
 
-Date: 2026-05-25
+Date: ${TEST_DATE}
 
 ## Status
 
@@ -146,7 +150,7 @@ Accepted
   });
 
   it("rejects duplicate ADR numbers", () => {
-    const directory = path.join(makeTempRoot(), "doc", "adr");
+    const directory = makeAdrDirectory();
     writeAdrFixture(
       directory,
       "0001-record-decisions.md",
@@ -159,7 +163,7 @@ Accepted
   });
 
   it("refuses to overwrite a conflicting generated filename", () => {
-    const directory = path.join(makeTempRoot(), "doc", "adr");
+    const directory = makeAdrDirectory();
     writeAdrFixture(directory, "0001-use-postgresql.md", 1, "Use PostgreSQL");
 
     expect(() =>

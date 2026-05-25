@@ -21,32 +21,12 @@ interface CreateAdrRecordOptions {
   readonly number?: number;
 }
 
-function getRecordFilenameNumber(record: AdrRecord): number {
+function resolveRecordNumber(record: AdrRecord): number {
   return parseAdrFilename(record.filename)?.number ?? record.number;
 }
 
-function sortedByNumber(records: readonly AdrRecord[]): AdrRecord[] {
-  return [...records].sort((a, b) => {
-    return (
-      getRecordFilenameNumber(a) - getRecordFilenameNumber(b) ||
-      a.filename.localeCompare(b.filename)
-    );
-  });
-}
-
-function findRecordWithNumber(
-  records: readonly AdrRecord[],
-  number: number,
-): AdrRecord | undefined {
-  return records.find((record) => getRecordFilenameNumber(record) === number);
-}
-
-function isMissingDirectory(pathname: string): boolean {
-  return !existsSync(pathname);
-}
-
 export function listAdrRecords(directory: string): AdrRecord[] {
-  if (isMissingDirectory(directory)) {
+  if (!existsSync(directory)) {
     return [];
   }
 
@@ -78,12 +58,17 @@ export function listAdrRecords(directory: string): AdrRecord[] {
     records.push(record);
   }
 
-  return sortedByNumber(records);
+  return records.sort((a, b) => {
+    return (
+      resolveRecordNumber(a) - resolveRecordNumber(b) ||
+      a.filename.localeCompare(b.filename)
+    );
+  });
 }
 
 export function getNextAdrNumber(records: readonly AdrRecord[]): number {
   const max = records.reduce((acc, record) => {
-    return Math.max(acc, getRecordFilenameNumber(record));
+    return Math.max(acc, resolveRecordNumber(record));
   }, 0);
 
   return max + 1;
@@ -109,7 +94,9 @@ export function createAdrRecord({
     throw new Error(`ADR file already exists: ${filePath}`);
   }
 
-  const duplicateRecord = findRecordWithNumber(records, chosenNumber);
+  const duplicateRecord = records.find((record) => {
+    return resolveRecordNumber(record) === chosenNumber;
+  });
   if (duplicateRecord) {
     throw new Error(
       `Duplicate ADR number ${chosenNumber}: ${duplicateRecord.filename}`,
