@@ -287,11 +287,18 @@ function expectDefaultAdrCreation(
   }
 }
 
-function expectDefaultAdrWorkflow(cases: readonly DefaultAdrCase[]): void {
+function createDefaultAdrWorkflow(cases: readonly DefaultAdrCase[]): string {
   const root = makeTempRoot();
 
   expect(runScript(root, ["init"])).toMatchObject({ code: 0 });
   expectDefaultAdrCreation(root, cases);
+
+  return root;
+}
+
+function expectDefaultAdrWorkflow(cases: readonly DefaultAdrCase[]): void {
+  const root = createDefaultAdrWorkflow(cases);
+
   expect(runScript(root, ["list"])).toEqual({
     code: 0,
     stdout: expectedListRows(cases),
@@ -576,10 +583,7 @@ describe("ADR workflows", () => {
   });
 
   it("generates Markdown contents for the ADR log", () => {
-    const root = makeTempRoot();
-
-    expect(runScript(root, ["init"])).toMatchObject({ code: 0 });
-    expectDefaultAdrCreation(root, NEW_ADR_CASES);
+    const root = createDefaultAdrWorkflow(NEW_ADR_CASES);
 
     expect(runScript(root, ["toc"])).toEqual({
       code: 0,
