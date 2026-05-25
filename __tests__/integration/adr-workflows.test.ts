@@ -153,6 +153,21 @@ function expectDefaultAdrWorkflow(cases: readonly DefaultAdrCase[]): void {
   });
 }
 
+function expectAlternativeAdrDirectoryInitialized(root: string): void {
+  const initialPath = initialAdrPath(root, ALTERNATIVE_ADR_DIRECTORY);
+
+  expect(runScript(root, ["init", ALTERNATIVE_ADR_DIRECTORY])).toEqual({
+    code: 0,
+    stdout: [initialPath],
+    stderr: [],
+  });
+  expect(readFileSync(path.join(root, ".adr-dir"), "utf8")).toBe(
+    `${ALTERNATIVE_ADR_DIRECTORY}\n`,
+  );
+  expect(existsSync(path.join(root, DEFAULT_ADR_DIRECTORY))).toBe(false);
+  expect(readFileSync(initialPath, "utf8")).toBe(EXPECTED_INITIAL_ADR);
+}
+
 function runScript(
   cwd: string,
   argv: readonly string[],
@@ -199,19 +214,8 @@ describe("ADR workflows", () => {
 
   it("creates records in an alternative ADR directory", () => {
     const root = makeTempRoot();
-    const initialPath = initialAdrPath(root, ALTERNATIVE_ADR_DIRECTORY);
 
-    expect(runScript(root, ["init", ALTERNATIVE_ADR_DIRECTORY])).toEqual({
-      code: 0,
-      stdout: [initialPath],
-      stderr: [],
-    });
-    expect(readFileSync(path.join(root, ".adr-dir"), "utf8")).toBe(
-      `${ALTERNATIVE_ADR_DIRECTORY}\n`,
-    );
-    expect(existsSync(path.join(root, DEFAULT_ADR_DIRECTORY))).toBe(false);
-    expect(readFileSync(initialPath, "utf8")).toBe(EXPECTED_INITIAL_ADR);
-
+    expectAlternativeAdrDirectoryInitialized(root);
     expectDefaultAdrCreation(
       root,
       [USE_POSTGRESQL_ADR],
@@ -235,9 +239,7 @@ describe("ADR workflows", () => {
 
     mkdirSync(nestedDirectory, { recursive: true });
 
-    expect(runScript(root, ["init", ALTERNATIVE_ADR_DIRECTORY])).toMatchObject({
-      code: 0,
-    });
+    expectAlternativeAdrDirectoryInitialized(root);
     expect(
       runScript(nestedDirectory, ["new", USE_POSTGRESQL_ADR.title]),
     ).toEqual({
