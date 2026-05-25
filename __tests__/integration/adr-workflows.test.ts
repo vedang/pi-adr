@@ -1,4 +1,10 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -212,6 +218,40 @@ describe("ADR workflows", () => {
       ALTERNATIVE_ADR_DIRECTORY,
     );
     expect(runScript(root, ["list"])).toEqual({
+      code: 0,
+      stdout: expectedListRows([USE_POSTGRESQL_ADR]),
+      stderr: [],
+    });
+  });
+
+  it("finds a custom ADR directory from nested working directories", () => {
+    const root = makeTempRoot();
+    const nestedDirectory = path.join(root, "src", "app", "feature");
+    const createdAdrPath = adrPath(
+      root,
+      USE_POSTGRESQL_ADR.filename,
+      ALTERNATIVE_ADR_DIRECTORY,
+    );
+
+    mkdirSync(nestedDirectory, { recursive: true });
+
+    expect(runScript(root, ["init", ALTERNATIVE_ADR_DIRECTORY])).toMatchObject({
+      code: 0,
+    });
+    expect(
+      runScript(nestedDirectory, ["new", USE_POSTGRESQL_ADR.title]),
+    ).toEqual({
+      code: 0,
+      stdout: [createdAdrPath],
+      stderr: [],
+    });
+    expect(readFileSync(createdAdrPath, "utf8")).toBe(
+      expectedDefaultAdr(USE_POSTGRESQL_ADR.number, USE_POSTGRESQL_ADR.title),
+    );
+    expect(existsSync(path.join(nestedDirectory, DEFAULT_ADR_DIRECTORY))).toBe(
+      false,
+    );
+    expect(runScript(nestedDirectory, ["list"])).toEqual({
       code: 0,
       stdout: expectedListRows([USE_POSTGRESQL_ADR]),
       stderr: [],
