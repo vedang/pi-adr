@@ -73,6 +73,16 @@ const USE_POSTGRESQL_ADR = {
   title: "Use PostgreSQL",
   filename: "0002-use-postgresql.md",
 } as const;
+const USE_MYSQL_ADR = {
+  number: 2,
+  title: "Use MySQL",
+  filename: "0002-use-mysql.md",
+} as const;
+const USE_POSTGRESQL_REPLACEMENT_ADR = {
+  number: 3,
+  title: "Use PostgreSQL",
+  filename: "0003-use-postgresql.md",
+} as const;
 const NEW_ADR_CASES = [
   USE_POSTGRESQL_ADR,
   {
@@ -150,6 +160,21 @@ function expectedDefaultAdrSuperseding(
   title: string,
   supersededAdr: DefaultAdrCase,
 ): string {
+  return expectedDefaultAdrSupersedingMany(number, title, [supersededAdr]);
+}
+
+function expectedDefaultAdrSupersedingMany(
+  number: number,
+  title: string,
+  supersededAdrs: readonly DefaultAdrCase[],
+): string {
+  const statusLinks = supersededAdrs
+    .map(
+      (supersededAdr) =>
+        `Supersedes [${supersededAdr.number}. ${supersededAdr.title}](${supersededAdr.filename})`,
+    )
+    .join("\n\n");
+
   return `# ${number}. ${title}
 
 Date: ${TEST_DATE}
@@ -158,7 +183,7 @@ Date: ${TEST_DATE}
 
 Accepted
 
-Supersedes [${supersededAdr.number}. ${supersededAdr.title}](${supersededAdr.filename})
+${statusLinks}
 
 ## Context
 
@@ -168,12 +193,29 @@ Supersedes [${supersededAdr.number}. ${supersededAdr.title}](${supersededAdr.fil
 `;
 }
 
+function expectedAdrSupersededBy(
+  content: string,
+  replacementAdr: DefaultAdrCase,
+): string {
+  return content.replace(
+    "Accepted",
+    `Superseded by [${replacementAdr.number}. ${replacementAdr.title}](${replacementAdr.filename})`,
+  );
+}
+
 function expectedInitialAdrSupersededBy(
   replacementAdr: DefaultAdrCase,
 ): string {
-  return EXPECTED_INITIAL_ADR.replace(
-    "Accepted",
-    `Superseded by [${replacementAdr.number}. ${replacementAdr.title}](${replacementAdr.filename})`,
+  return expectedAdrSupersededBy(EXPECTED_INITIAL_ADR, replacementAdr);
+}
+
+function expectedDefaultAdrSupersededBy(
+  supersededAdr: DefaultAdrCase,
+  replacementAdr: DefaultAdrCase,
+): string {
+  return expectedAdrSupersededBy(
+    expectedDefaultAdr(supersededAdr.number, supersededAdr.title),
+    replacementAdr,
   );
 }
 
@@ -367,6 +409,57 @@ describe("ADR workflows", () => {
       stdout: [
         expectedListRow(INITIAL_ADR_CASE, "Superseded"),
         expectedListRow(USE_POSTGRESQL_ADR),
+      ],
+      stderr: [],
+    });
+  });
+
+  it("supersedes multiple ADRs during record creation", () => {
+    const root = makeTempRoot();
+    const createdAdrPath = adrPath(
+      root,
+      USE_POSTGRESQL_REPLACEMENT_ADR.filename,
+    );
+
+    expect(runScript(root, ["init"])).toMatchObject({ code: 0 });
+    expectDefaultAdrCreation(root, [USE_MYSQL_ADR]);
+
+    expect(
+      runScript(root, [
+        "new",
+        "--supersedes",
+        String(INITIAL_ADR_CASE.number),
+        "--supersedes",
+        String(USE_MYSQL_ADR.number),
+        USE_POSTGRESQL_REPLACEMENT_ADR.title,
+      ]),
+    ).toEqual({
+      code: 0,
+      stdout: [createdAdrPath],
+      stderr: [],
+    });
+    expect(readFileSync(initialAdrPath(root), "utf8")).toBe(
+      expectedInitialAdrSupersededBy(USE_POSTGRESQL_REPLACEMENT_ADR),
+    );
+    expect(readFileSync(adrPath(root, USE_MYSQL_ADR.filename), "utf8")).toBe(
+      expectedDefaultAdrSupersededBy(
+        USE_MYSQL_ADR,
+        USE_POSTGRESQL_REPLACEMENT_ADR,
+      ),
+    );
+    expect(readFileSync(createdAdrPath, "utf8")).toBe(
+      expectedDefaultAdrSupersedingMany(
+        USE_POSTGRESQL_REPLACEMENT_ADR.number,
+        USE_POSTGRESQL_REPLACEMENT_ADR.title,
+        [INITIAL_ADR_CASE, USE_MYSQL_ADR],
+      ),
+    );
+    expect(runScript(root, ["list"])).toEqual({
+      code: 0,
+      stdout: [
+        expectedListRow(INITIAL_ADR_CASE, "Superseded"),
+        expectedListRow(USE_MYSQL_ADR, "Superseded"),
+        expectedListRow(USE_POSTGRESQL_REPLACEMENT_ADR),
       ],
       stderr: [],
     });
