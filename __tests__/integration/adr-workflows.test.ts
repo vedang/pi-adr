@@ -706,4 +706,21 @@ describe("ADR workflows", () => {
   it("avoids treating padded ADR numbers as octal", () => {
     expectDefaultAdrWorkflow(OCTAL_NUMBER_ADR_CASES);
   });
+
+  it("requires a title when creating a new ADR", () => {
+    const root = makeTempRoot();
+
+    expect(runScript(root, ["init"])).toMatchObject({ code: 0 });
+    expect(runScript(root, ["new"])).toEqual({
+      code: 1,
+      stdout: [],
+      stderr: ["Missing ADR title."],
+    });
+    expect(existsSync(adrPath(root, "0002-.md"))).toBe(false);
+    expect(runScript(root, ["list"])).toEqual({
+      code: 0,
+      stdout: [expectedListRow(INITIAL_ADR_CASE)],
+      stderr: [],
+    });
+  });
 });
