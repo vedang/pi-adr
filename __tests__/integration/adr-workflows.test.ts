@@ -407,6 +407,17 @@ function expectPostgresqlAmendsInitial(root: string): void {
   });
 }
 
+function expectValidationFailure(
+  root: string,
+  stderr: readonly string[],
+): void {
+  expect(runScript(root, ["validate"])).toEqual({
+    code: 1,
+    stdout: [],
+    stderr,
+  });
+}
+
 function runScript(
   cwd: string,
   argv: readonly string[],
@@ -740,13 +751,9 @@ describe("ADR workflows", () => {
       ),
     );
 
-    expect(runScript(root, ["validate"])).toEqual({
-      code: 1,
-      stdout: [],
-      stderr: [
-        `${filePath}:9: ADR status link target does not exist: ${missingAdr.filename}`,
-      ],
-    });
+    expectValidationFailure(root, [
+      `${filePath}:9: ADR status link target does not exist: ${missingAdr.filename}`,
+    ]);
   });
 
   it("reports heading number mismatches during validation", () => {
@@ -759,12 +766,8 @@ describe("ADR workflows", () => {
       expectedDefaultAdr(wrongHeadingNumber, USE_POSTGRESQL_ADR.title),
     );
 
-    expect(runScript(root, ["validate"])).toEqual({
-      code: 1,
-      stdout: [],
-      stderr: [
-        `${filePath}:1: ADR heading number ${wrongHeadingNumber} does not match filename number ${USE_POSTGRESQL_ADR.number}`,
-      ],
-    });
+    expectValidationFailure(root, [
+      `${filePath}:1: ADR heading number ${wrongHeadingNumber} does not match filename number ${USE_POSTGRESQL_ADR.number}`,
+    ]);
   });
 });
