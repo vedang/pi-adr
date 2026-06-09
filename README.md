@@ -1,5 +1,9 @@
 # pi-adr
 
+<p align="center">
+  <img src="assets/banner.png" alt="pi-adr hero banner" width="100%">
+</p>
+
 Create and maintain Architecture Decision Records (ADRs) with pi.
 
 `pi-adr` is a skills-first pi package. It exposes the `adr` skill from

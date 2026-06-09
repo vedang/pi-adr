@@ -6,3 +6,4 @@ coverage/
 .agents/plans/
 .pi/extensions/adr.json
 .pi/extensions/simplify-code.json
+.pi/generated-images/
