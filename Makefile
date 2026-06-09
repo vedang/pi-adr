@@ -86,6 +86,21 @@ dev:    ## Run the local development watch loop
 build: check    ## Build the TypeScript package
 	bun run build
 
+.PHONY: release
+release: release-minor    ## Default release: bump the minor version
+
+.PHONY: release-major
+release-major: format check test    ## Bump the major version and create a release tag
+	bun pm version major
+
+.PHONY: release-minor
+release-minor: format check test    ## Bump the minor version and create a release tag
+	bun pm version minor
+
+.PHONY: release-patch
+release-patch: format check test    ## Bump the patch version and create a release tag
+	bun pm version patch
+
 .PHONY: clean
 clean:     ## Delete generated artifacts
 	rm -rf node_modules/

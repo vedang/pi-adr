@@ -8,29 +8,11 @@ scripts together in that skill bundle.
 
 ## Install
 
-Install from a local checkout while developing:
+Install from git:
 
 ```bash
-pi install /absolute/path/to/pi-adr.root
+pi install git:github.com/vedang/pi-adr
 ```
-
-Or install from a git source after publishing/tagging:
-
-```bash
-pi install git:<repo-url>@<ref>
-```
-
-Pi discovers the package through this manifest entry:
-
-```json
-{
-  "pi": {
-    "skills": ["./skills"]
-  }
-}
-```
-
-No prompt template or extension entry point is required for the MVP.
 
 ## Use
 
@@ -113,9 +95,10 @@ It is designed to work with common `adr-tools` conventions:
 - ISO dates (`YYYY-MM-DD`),
 - Markdown links in status sections.
 
-Compatibility note: old `adr-tools` records may use the historical spellings
-`Supercedes` and `Superceded`. Automation parses both spellings and emits
-standard `Supersedes`/`Superseded by` status links for new supersession updates.
+Compatibility note: old `adr-tools` records may use the historical
+spellings `Supercedes` and `Superceded`. We parse both spellings and
+emits standard `Supersedes`/`Superseded by` status links for new
+supersession updates.
 
 ## Development
 

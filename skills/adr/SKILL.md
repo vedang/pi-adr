@@ -9,18 +9,18 @@ Use this skill to help humans and agents create maintainable Architecture Decisi
 
 ## When to load resources
 
-| Need | Resource |
-| --- | --- |
-| ADR prose guidance | `references/nygard-adr-format.md` |
-| Existing adr-tools logs | `references/adr-tools-compatibility.md` |
-| Original source article | `references/cognitect-documenting-architecture-decisions.md` |
-| Copyable templates | `assets/default-template.md`, `assets/initial-adr-template.md` |
+| Need                     | Resource                                                                                |
+|--------------------------|-----------------------------------------------------------------------------------------|
+| ADR prose guidance       | `references/nygard-adr-format.md`                                                       |
+| Existing adr-tools logs  | `references/adr-tools-compatibility.md`                                                 |
+| Original source article  | `references/cognitect-documenting-architecture-decisions.md`                            |
+| Copyable templates       | `assets/default-template.md`, `assets/initial-adr-template.md`                          |
 | Safe ADR file operations | `bun run adr init/new/link/list/toc/graph/validate/slug/filename ...` from package root |
 
 ## Workflow
 
 1. Determine intent: create first ADR, create new ADR, supersede/amend/clarify an ADR, list/summarize decisions, validate ADRs, or generate reports.
-2. Locate ADR directory using existing project convention: `.adr-dir` wins, then `doc/adr`, then ask before creating a new location.
+2. Locate ADR directory using existing project convention: `.adr-dir` wins, then `doc/adr`, then ask before creating a new location. Write the new location to `.adr-dir`
 3. Inspect existing ADRs for numbering, status style, templates, and spelling conventions.
 4. For new ADRs, capture one decision only. Ask at most 1-3 clarifying questions when context, decision, status, or consequences are unclear.
 5. Use `bun run adr ...` for deterministic init, create, link, list, report, validate, slug, and filename operations. Inspect generated prose and status links before summarizing.
