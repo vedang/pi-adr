@@ -1,0 +1,18 @@
+{
+  "name": "pi-adr",
+  "owner": {
+    "name": "Vedang Manerikar",
+    "url": "https://github.com/vedang"
+  },
+  "metadata": {
+    "description": "Architecture Decision Records skill for Claude Code and pi."
+  },
+  "plugins": [
+    {
+      "name": "adr",
+      "source": "./",
+      "description": "Create and maintain Nygard-style ADRs with supersession tracking and a deterministic helper CLI (requires bun).",
+      "category": "documentation"
+    }
+  ]
+}

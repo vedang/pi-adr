@@ -1,0 +1,11 @@
+{
+  "name": "adr",
+  "version": "0.3.0",
+  "description": "Create, review, update, query, and maintain Architecture Decision Records (Nygard format) with a deterministic helper CLI.",
+  "author": {
+    "name": "Vedang Manerikar",
+    "url": "https://github.com/vedang"
+  },
+  "homepage": "https://github.com/vedang/pi-adr",
+  "license": "MIT"
+}

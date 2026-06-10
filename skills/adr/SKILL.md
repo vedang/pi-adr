@@ -15,7 +15,7 @@ Use this skill to help humans and agents create maintainable Architecture Decisi
 | Existing adr-tools logs  | `references/adr-tools-compatibility.md`                                                 |
 | Original source article  | `references/cognitect-documenting-architecture-decisions.md`                            |
 | Copyable templates       | `assets/default-template.md`, `assets/initial-adr-template.md`                          |
-| Safe ADR file operations | `bun run adr init/new/link/list/toc/graph/validate/slug/filename ...` from package root |
+| Safe ADR file operations | `bun $SKILL_DIR/scripts/adr.ts init/new/link/list/toc/graph/validate/slug/filename ...` (see Helper commands) |
 
 ## Workflow
 
@@ -23,7 +23,7 @@ Use this skill to help humans and agents create maintainable Architecture Decisi
 2. Locate ADR directory using existing project convention: `.adr-dir` wins, then `doc/adr`, then ask before creating a new location. Write the new location to `.adr-dir`
 3. Inspect existing ADRs for numbering, status style, templates, and spelling conventions.
 4. For new ADRs, capture one decision only. Ask at most 1-3 clarifying questions when context, decision, status, or consequences are unclear.
-5. Use `bun run adr ...` for deterministic init, create, link, list, report, validate, slug, and filename operations. Inspect generated prose and status links before summarizing.
+5. Use the helper CLI (`bun $SKILL_DIR/scripts/adr.ts ...`) for deterministic init, create, link, list, report, validate, slug, and filename operations. Inspect generated prose and status links before summarizing.
 6. Summarize path, title, status, links, and assumptions after writing or updating ADRs.
 
 ## Writing rules
@@ -37,18 +37,23 @@ Use this skill to help humans and agents create maintainable Architecture Decisi
 
 ## Helper commands
 
-```bash
-# From package root
-bun run adr init [directory]
-bun run adr new [--status STATUS] [--supersedes REF]... [--link "REF:LINK:REVERSE"]... "Use PostgreSQL"
-bun run adr link SOURCE LINK TARGET "REVERSE LINK"
-bun run adr list
-bun run adr toc [--prefix PREFIX]
-bun run adr graph [--prefix PREFIX] [--extension EXT]
-bun run adr validate
-bun run adr slug "Use PostgreSQL for transactional data"
-bun run adr filename 1 "Use PostgreSQL for transactional data"
+The CLI is self-contained in this skill directory. Resolve `SKILL_DIR` to the
+directory containing this SKILL.md (in Claude Code plugins this is
+`${CLAUDE_PLUGIN_ROOT}/skills/adr`; in pi it is the skill folder you loaded),
+then run the commands from your current project directory so ADR paths
+resolve against the project:
 
-# From this skill directory
-bun run scripts/adr.ts validate
+```bash
+ADR="bun $SKILL_DIR/scripts/adr.ts"
+$ADR init [directory]
+$ADR new [--status STATUS] [--supersedes REF]... [--link "REF:LINK:REVERSE"]... "Use PostgreSQL"
+$ADR link SOURCE LINK TARGET "REVERSE LINK"
+$ADR list
+$ADR toc [--prefix PREFIX]
+$ADR graph [--prefix PREFIX] [--extension EXT]
+$ADR validate
+$ADR slug "Use PostgreSQL for transactional data"
+$ADR filename 1 "Use PostgreSQL for transactional data"
+
+# From the pi-adr package root, `bun run adr ...` still works as an alias.
 ```
