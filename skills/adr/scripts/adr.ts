@@ -20,7 +20,11 @@ import {
   isAdrStatus,
 } from "./lib/model";
 import { generateAdrGraph, generateAdrToc } from "./lib/reports";
-import { createAdrRecord, listAdrRecords } from "./lib/repository";
+import {
+  createAdrRecord,
+  listAdrRecords,
+  refreshNavigationLinks,
+} from "./lib/repository";
 import { formatAdrFilename, slugifyAdrTitle } from "./lib/slug";
 import { INITIAL_ADR_TEMPLATE, renderAdrTemplate } from "./lib/templates";
 import { validateAdrDirectory } from "./lib/validation";
@@ -287,6 +291,7 @@ function initAdrDirectory(
   });
 
   writeFileSync(filePath, rawContent, { flag: "wx" });
+  refreshNavigationLinks(config.directory);
   runtime.stdout(filePath);
   return 0;
 }
@@ -341,6 +346,7 @@ function createNewAdr(
     });
   }
 
+  refreshNavigationLinks(config.directory);
   runtime.stdout(createdRecord.filePath);
   return 0;
 }
@@ -373,6 +379,7 @@ function linkExistingAdrs(
 
   assertDistinctLinkEndpoints(source, target);
   linkAdrRecords({ source, relationship, target, reverseRelationship });
+  refreshNavigationLinks(config.directory);
   runtime.stdout(`${source.filename} ${relationship} ${target.filename}`);
   return 0;
 }

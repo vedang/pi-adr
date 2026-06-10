@@ -141,8 +141,43 @@ function initialAdrPath(
   return adrPath(root, INITIAL_ADR_FILENAME, directory);
 }
 
-function expectedDefaultAdr(number: number, title: string): string {
-  return `# ${number}. ${title}
+function expectedNavigationLine(
+  previousAdr?: DefaultAdrCase,
+  nextAdr?: DefaultAdrCase,
+): string {
+  return [
+    previousAdr ? `[<- Prev](${previousAdr.filename})` : null,
+    nextAdr ? `[Next ->](${nextAdr.filename})` : null,
+  ]
+    .filter((line): line is string => line !== null)
+    .join(" | ");
+}
+
+function expectedAdrWithNavigation(
+  content: string,
+  previousAdr?: DefaultAdrCase,
+  nextAdr?: DefaultAdrCase,
+): string {
+  const navigationLine = expectedNavigationLine(previousAdr, nextAdr);
+
+  if (!navigationLine) {
+    return content;
+  }
+
+  return content.replace(
+    `Date: ${TEST_DATE}\n\n## Status`,
+    `Date: ${TEST_DATE}\n\n${navigationLine}\n\n## Status`,
+  );
+}
+
+function expectedDefaultAdr(
+  number: number,
+  title: string,
+  previousAdr?: DefaultAdrCase,
+  nextAdr?: DefaultAdrCase,
+): string {
+  return expectedAdrWithNavigation(
+    `# ${number}. ${title}
 
 Date: ${TEST_DATE}
 
@@ -155,20 +190,34 @@ Accepted
 ## Decision
 
 ## Consequences
-`;
+`,
+    previousAdr,
+    nextAdr,
+  );
 }
 
-function expectedProjectTemplateAdr(number: number, title: string): string {
-  return PROJECT_ADR_TEMPLATE.replace("NUMBER", String(number))
-    .replace("TITLE", title)
-    .replace("DATE", TEST_DATE)
-    .replace("STATUS", "Accepted");
+function expectedProjectTemplateAdr(
+  number: number,
+  title: string,
+  previousAdr?: DefaultAdrCase,
+  nextAdr?: DefaultAdrCase,
+): string {
+  return expectedAdrWithNavigation(
+    PROJECT_ADR_TEMPLATE.replace("NUMBER", String(number))
+      .replace("TITLE", title)
+      .replace("DATE", TEST_DATE)
+      .replace("STATUS", "Accepted"),
+    previousAdr,
+    nextAdr,
+  );
 }
 
 function expectedDefaultAdrSuperseding(
   number: number,
   title: string,
   supersededAdrs: readonly DefaultAdrCase[],
+  previousAdr?: DefaultAdrCase,
+  nextAdr?: DefaultAdrCase,
 ): string {
   const statusLinks = supersededAdrs
     .map(
@@ -177,7 +226,8 @@ function expectedDefaultAdrSuperseding(
     )
     .join("\n\n");
 
-  return `# ${number}. ${title}
+  return expectedAdrWithNavigation(
+    `# ${number}. ${title}
 
 Date: ${TEST_DATE}
 
@@ -192,7 +242,10 @@ ${statusLinks}
 ## Decision
 
 ## Consequences
-`;
+`,
+    previousAdr,
+    nextAdr,
+  );
 }
 
 function expectedAdrWithStatusLink(content: string, linkLine: string): string {
@@ -213,9 +266,11 @@ function expectedDefaultAdrWithStatusLink(
   sourceAdr: DefaultAdrCase,
   relationship: string,
   targetAdr: DefaultAdrCase,
+  previousAdr?: DefaultAdrCase,
+  nextAdr?: DefaultAdrCase,
 ): string {
   return expectedAdrWithStatusLink(
-    expectedDefaultAdr(sourceAdr.number, sourceAdr.title),
+    expectedDefaultAdr(sourceAdr.number, sourceAdr.title, previousAdr, nextAdr),
     expectedStatusLink(relationship, targetAdr),
   );
 }
@@ -223,9 +278,10 @@ function expectedDefaultAdrWithStatusLink(
 function expectedInitialAdrWithStatusLink(
   relationship: string,
   targetAdr: DefaultAdrCase,
+  nextAdr?: DefaultAdrCase,
 ): string {
   return expectedAdrWithStatusLink(
-    EXPECTED_INITIAL_ADR,
+    expectedAdrWithNavigation(EXPECTED_INITIAL_ADR, undefined, nextAdr),
     expectedStatusLink(relationship, targetAdr),
   );
 }
@@ -242,16 +298,27 @@ function expectedAdrSupersededBy(
 
 function expectedInitialAdrSupersededBy(
   replacementAdr: DefaultAdrCase,
+  nextAdr?: DefaultAdrCase,
 ): string {
-  return expectedAdrSupersededBy(EXPECTED_INITIAL_ADR, replacementAdr);
+  return expectedAdrSupersededBy(
+    expectedAdrWithNavigation(EXPECTED_INITIAL_ADR, undefined, nextAdr),
+    replacementAdr,
+  );
 }
 
 function expectedDefaultAdrSupersededBy(
   supersededAdr: DefaultAdrCase,
   replacementAdr: DefaultAdrCase,
+  previousAdr?: DefaultAdrCase,
+  nextAdr?: DefaultAdrCase,
 ): string {
   return expectedAdrSupersededBy(
-    expectedDefaultAdr(supersededAdr.number, supersededAdr.title),
+    expectedDefaultAdr(
+      supersededAdr.number,
+      supersededAdr.title,
+      previousAdr,
+      nextAdr,
+    ),
     replacementAdr,
   );
 }
@@ -318,7 +385,10 @@ function expectDefaultAdrCreation(
   cases: readonly DefaultAdrCase[],
   directory = DEFAULT_ADR_DIRECTORY,
 ): void {
-  for (const { number, title, filename } of cases) {
+  let previousAdr: DefaultAdrCase = INITIAL_ADR_CASE;
+
+  for (const adrCase of cases) {
+    const { number, title, filename } = adrCase;
     const filePath = adrPath(root, filename, directory);
 
     expect(runScript(root, ["new", title])).toEqual({
@@ -327,8 +397,9 @@ function expectDefaultAdrCreation(
       stderr: [],
     });
     expect(readFileSync(filePath, "utf8")).toBe(
-      expectedDefaultAdr(number, title),
+      expectedDefaultAdr(number, title, previousAdr),
     );
+    previousAdr = adrCase;
   }
 }
 
@@ -388,10 +459,15 @@ function expectPostgresqlAmendsInitial(root: string): void {
       USE_POSTGRESQL_ADR,
       "Amends",
       INITIAL_ADR_CASE,
+      INITIAL_ADR_CASE,
     ),
   );
   expect(readFileSync(initialAdrPath(root), "utf8")).toBe(
-    expectedInitialAdrWithStatusLink("Amended by", USE_POSTGRESQL_ADR),
+    expectedInitialAdrWithStatusLink(
+      "Amended by",
+      USE_POSTGRESQL_ADR,
+      USE_POSTGRESQL_ADR,
+    ),
   );
   expect(runScript(root, ["list"])).toEqual({
     code: 0,
@@ -494,6 +570,7 @@ describe("ADR workflows", () => {
       expectedProjectTemplateAdr(
         USE_POSTGRESQL_ADR.number,
         USE_POSTGRESQL_ADR.title,
+        INITIAL_ADR_CASE,
       ),
     );
     expect(runScript(root, ["list"])).toEqual({
@@ -522,13 +599,14 @@ describe("ADR workflows", () => {
       stderr: [],
     });
     expect(readFileSync(initialAdrPath(root), "utf8")).toBe(
-      expectedInitialAdrSupersededBy(USE_POSTGRESQL_ADR),
+      expectedInitialAdrSupersededBy(USE_POSTGRESQL_ADR, USE_POSTGRESQL_ADR),
     );
     expect(readFileSync(createdAdrPath, "utf8")).toBe(
       expectedDefaultAdrSuperseding(
         USE_POSTGRESQL_ADR.number,
         USE_POSTGRESQL_ADR.title,
         supersededAdrs,
+        INITIAL_ADR_CASE,
       ),
     );
     expect(runScript(root, ["list"])).toEqual({
@@ -566,11 +644,16 @@ describe("ADR workflows", () => {
       stderr: [],
     });
     expect(readFileSync(initialAdrPath(root), "utf8")).toBe(
-      expectedInitialAdrSupersededBy(USE_POSTGRESQL_REPLACEMENT_ADR),
+      expectedInitialAdrSupersededBy(
+        USE_POSTGRESQL_REPLACEMENT_ADR,
+        USE_MYSQL_ADR,
+      ),
     );
     expect(readFileSync(adrPath(root, USE_MYSQL_ADR.filename), "utf8")).toBe(
       expectedDefaultAdrSupersededBy(
         USE_MYSQL_ADR,
+        USE_POSTGRESQL_REPLACEMENT_ADR,
+        INITIAL_ADR_CASE,
         USE_POSTGRESQL_REPLACEMENT_ADR,
       ),
     );
@@ -579,6 +662,7 @@ describe("ADR workflows", () => {
         USE_POSTGRESQL_REPLACEMENT_ADR.number,
         USE_POSTGRESQL_REPLACEMENT_ADR.title,
         supersededAdrs,
+        USE_MYSQL_ADR,
       ),
     );
     expect(runScript(root, ["list"])).toEqual({
@@ -698,7 +782,11 @@ describe("ADR workflows", () => {
       stderr: [],
     });
     expect(readFileSync(createdAdrPath, "utf8")).toBe(
-      expectedDefaultAdr(USE_POSTGRESQL_ADR.number, USE_POSTGRESQL_ADR.title),
+      expectedDefaultAdr(
+        USE_POSTGRESQL_ADR.number,
+        USE_POSTGRESQL_ADR.title,
+        INITIAL_ADR_CASE,
+      ),
     );
     expect(existsSync(path.join(nestedDirectory, DEFAULT_ADR_DIRECTORY))).toBe(
       false,
@@ -748,11 +836,12 @@ describe("ADR workflows", () => {
         USE_POSTGRESQL_ADR,
         "Amends",
         missingAdr,
+        INITIAL_ADR_CASE,
       ),
     );
 
     expectValidationFailure(root, [
-      `${filePath}:9: ADR status link target does not exist: ${missingAdr.filename}`,
+      `${filePath}:11: ADR status link target does not exist: ${missingAdr.filename}`,
     ]);
   });
 
@@ -763,7 +852,11 @@ describe("ADR workflows", () => {
 
     writeFileSync(
       filePath,
-      expectedDefaultAdr(wrongHeadingNumber, USE_POSTGRESQL_ADR.title),
+      expectedDefaultAdr(
+        wrongHeadingNumber,
+        USE_POSTGRESQL_ADR.title,
+        INITIAL_ADR_CASE,
+      ),
     );
 
     expectValidationFailure(root, [

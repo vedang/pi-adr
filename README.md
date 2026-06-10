@@ -97,7 +97,8 @@ It is designed to work with common `adr-tools` conventions:
   `0001-record-architecture-decisions.md`,
 - headings such as `# 1. Record architecture decisions`,
 - ISO dates (`YYYY-MM-DD`),
-- Markdown links in status sections.
+- Markdown links in status sections,
+- generated `[<- Prev](...)` / `[Next ->](...)` navigation links before the `Status` section.
 
 Compatibility note: old `adr-tools` records may use the historical
 spellings `Supercedes` and `Superceded`. We parse both spellings and

@@ -12,6 +12,15 @@ import { parseAdrFilename, parseAdrMarkdown } from "./parser";
 import { formatAdrFilename } from "./slug";
 import { loadAdrTemplate, renderAdrTemplate } from "./templates";
 
+const ADR_STATUS_HEADING_PATTERN = /^##\s*Status\s*$/;
+const PREV_NAV_LINK = "[<- Prev]";
+const NEXT_NAV_LINK = "[Next ->]";
+const NAVIGATION_LINE_PATTERNS = [
+  /^\[<- Prev\]\([^)]+\)\s*$/,
+  /^\[Next ->\]\([^)]+\)\s*$/,
+  /^\[<- Prev\]\([^)]+\)\s*\|\s*\[Next ->\]\([^)]+\)\s*$/,
+] as const;
+
 interface CreateAdrRecordOptions {
   readonly config: AdrRepositoryConfig;
   readonly title: string;
@@ -23,6 +32,80 @@ interface CreateAdrRecordOptions {
 
 function resolveRecordNumber(record: AdrRecord): number {
   return parseAdrFilename(record.filename)?.number ?? record.number;
+}
+
+function isNavigationLine(line: string): boolean {
+  return NAVIGATION_LINE_PATTERNS.some((pattern) => pattern.test(line));
+}
+
+function navigationLine(prevFilename?: string, nextFilename?: string): string {
+  const links = [
+    prevFilename ? `${PREV_NAV_LINK}(${prevFilename})` : null,
+    nextFilename ? `${NEXT_NAV_LINK}(${nextFilename})` : null,
+  ].filter((link): link is string => link !== null);
+
+  return links.join(" | ");
+}
+
+function stripTrailingBlankLines(lines: readonly string[]): string[] {
+  const mutableLines = [...lines];
+
+  while (mutableLines.at(-1) === "") {
+    mutableLines.pop();
+  }
+
+  return mutableLines;
+}
+
+function replaceNavigationBlock(
+  content: string,
+  navigationLineText: string,
+): string {
+  const lines = content.split(/\r?\n/);
+  const statusHeadingIndex = lines.findIndex((line) =>
+    ADR_STATUS_HEADING_PATTERN.test(line),
+  );
+
+  if (statusHeadingIndex === -1) {
+    return content;
+  }
+
+  let prefix = stripTrailingBlankLines(lines.slice(0, statusHeadingIndex));
+
+  const lastPrefixLine = prefix.at(-1);
+  if (lastPrefixLine !== undefined && isNavigationLine(lastPrefixLine.trim())) {
+    prefix = stripTrailingBlankLines(prefix.slice(0, -1));
+  }
+
+  const normalizedPrefix = prefix.length === 0 ? prefix : [...prefix, ""];
+
+  if (!navigationLineText) {
+    return [...normalizedPrefix, ...lines.slice(statusHeadingIndex)].join("\n");
+  }
+
+  return [
+    ...normalizedPrefix,
+    navigationLineText,
+    "",
+    ...lines.slice(statusHeadingIndex),
+  ].join("\n");
+}
+
+export function refreshNavigationLinks(directory: string): void {
+  const records = listAdrRecords(directory);
+
+  for (let index = 0; index < records.length; index += 1) {
+    const record = records[index];
+    const previousRecord = records[index - 1];
+    const nextRecord = records[index + 1];
+    const line = navigationLine(previousRecord?.filename, nextRecord?.filename);
+
+    const updatedContent = replaceNavigationBlock(record.rawContent, line);
+
+    if (updatedContent !== record.rawContent) {
+      writeFileSync(record.filePath, updatedContent);
+    }
+  }
 }
 
 export function listAdrRecords(directory: string): AdrRecord[] {
@@ -124,5 +207,8 @@ export function createAdrRecord({
     throw error;
   }
 
-  return parseAdrMarkdown(filePath, rawContent);
+  refreshNavigationLinks(adrDirectory);
+
+  const refreshedContent = readFileSync(filePath, "utf8");
+  return parseAdrMarkdown(filePath, refreshedContent);
 }

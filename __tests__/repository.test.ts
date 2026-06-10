@@ -54,6 +54,27 @@ Existing context.
 `;
 }
 
+function adrMarkdownWithNavigation(
+  number: number,
+  title: string,
+  navigation: string,
+): string {
+  return `# ${number}. ${title}
+
+Date: ${TEST_DATE}
+
+${navigation}
+
+## Status
+
+Accepted
+
+## Context
+
+Existing context.
+`;
+}
+
 function writeAdrFixture(
   directory: string,
   filename: string,
@@ -136,6 +157,71 @@ describe("ADR repository", () => {
     expect(readFileSync(record.filePath, "utf8")).toBe(`# 1. Use PostgreSQL
 
 Date: ${TEST_DATE}
+
+## Status
+
+Accepted
+
+## Context
+
+## Decision
+
+## Consequences
+`);
+  });
+
+  it("adds previous and next navigation links between neighboring ADRs", () => {
+    const directory = makeAdrDirectory();
+    writeAdrFixture(
+      directory,
+      "0001-record-decisions.md",
+      1,
+      "Record decisions",
+    );
+
+    const secondRecord = createAdrRecord({
+      config: repositoryConfig(directory),
+      title: "Use PostgreSQL",
+      date: TEST_DATE,
+    });
+    const thirdRecord = createAdrRecord({
+      config: repositoryConfig(directory),
+      title: "Use Redis",
+      date: TEST_DATE,
+    });
+
+    expect(
+      readFileSync(path.join(directory, "0001-record-decisions.md"), "utf8"),
+    ).toBe(
+      adrMarkdownWithNavigation(
+        1,
+        "Record decisions",
+        "[Next ->](0002-use-postgresql.md)",
+      ),
+    );
+    expect(
+      readFileSync(secondRecord.filePath, "utf8"),
+    ).toBe(`# 2. Use PostgreSQL
+
+Date: ${TEST_DATE}
+
+[<- Prev](0001-record-decisions.md) | [Next ->](0003-use-redis.md)
+
+## Status
+
+Accepted
+
+## Context
+
+## Decision
+
+## Consequences
+`);
+    expect(readFileSync(thirdRecord.filePath, "utf8")).toBe(`# 3. Use Redis
+
+Date: ${TEST_DATE}
+
+[<- Prev](0002-use-postgresql.md)
 
 ## Status
 
