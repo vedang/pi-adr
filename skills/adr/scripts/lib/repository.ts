@@ -13,13 +13,13 @@ import { formatAdrFilename } from "./slug";
 import { loadAdrTemplate, renderAdrTemplate } from "./templates";
 
 const ADR_STATUS_HEADING_PATTERN = /^##\s*Status\s*$/;
-const PREV_NAV_LINK = "[<- Prev]";
-const NEXT_NAV_LINK = "[Next ->]";
-const NAVIGATION_LINE_PATTERNS = [
-  /^\[<- Prev\]\([^)]+\)\s*$/,
-  /^\[Next ->\]\([^)]+\)\s*$/,
-  /^\[<- Prev\]\([^)]+\)\s*\|\s*\[Next ->\]\([^)]+\)\s*$/,
-] as const;
+const PREV_NAV_LABEL = "<- Prev";
+const NEXT_NAV_LABEL = "Next ->";
+const PREV_NAV_LINK_PATTERN = markdownLinkPattern(PREV_NAV_LABEL);
+const NEXT_NAV_LINK_PATTERN = markdownLinkPattern(NEXT_NAV_LABEL);
+const NAVIGATION_LINE_PATTERN = new RegExp(
+  `^(?:${PREV_NAV_LINK_PATTERN}(?:\\s*\\|\\s*${NEXT_NAV_LINK_PATTERN})?|${NEXT_NAV_LINK_PATTERN})$`,
+);
 
 interface CreateAdrRecordOptions {
   readonly config: AdrRepositoryConfig;
@@ -34,14 +34,26 @@ function resolveRecordNumber(record: AdrRecord): number {
   return parseAdrFilename(record.filename)?.number ?? record.number;
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function markdownLinkPattern(label: string): string {
+  return `\\[${escapeRegExp(label)}\\]\\([^)]+\\)`;
+}
+
+function navigationLink(label: string, filename: string): string {
+  return `[${label}](${filename})`;
+}
+
 function isNavigationLine(line: string): boolean {
-  return NAVIGATION_LINE_PATTERNS.some((pattern) => pattern.test(line));
+  return NAVIGATION_LINE_PATTERN.test(line);
 }
 
 function navigationLine(prevFilename?: string, nextFilename?: string): string {
   const links = [
-    prevFilename ? `${PREV_NAV_LINK}(${prevFilename})` : null,
-    nextFilename ? `${NEXT_NAV_LINK}(${nextFilename})` : null,
+    prevFilename ? navigationLink(PREV_NAV_LABEL, prevFilename) : null,
+    nextFilename ? navigationLink(NEXT_NAV_LABEL, nextFilename) : null,
   ].filter((link): link is string => link !== null);
 
   return links.join(" | ");

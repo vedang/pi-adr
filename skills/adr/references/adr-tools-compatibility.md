@@ -34,7 +34,7 @@ STATUS
 ```
 
 `adr-tools` supports custom templates at `<adr-dir>/templates/template.md`.
-`pi-adr` inserts generated `[<- Prev](...)` / `[Next ->](...)` navigation links immediately before `## Status` when neighboring numbered ADRs exist, so status relationship parsing remains compatible.
+`pi-adr` helper commands maintain `[<- Prev](...)` / `[Next ->](...)` navigation links immediately before `## Status` when neighboring numbered ADRs exist, so status relationship parsing remains compatible.
 
 ## Links and status changes
 

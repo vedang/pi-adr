@@ -291,7 +291,6 @@ function initAdrDirectory(
   });
 
   writeFileSync(filePath, rawContent, { flag: "wx" });
-  refreshNavigationLinks(config.directory);
   runtime.stdout(filePath);
   return 0;
 }
@@ -346,7 +345,10 @@ function createNewAdr(
     });
   }
 
-  refreshNavigationLinks(config.directory);
+  if (supersededRecords.length > 0 || options.links.length > 0) {
+    refreshNavigationLinks(config.directory);
+  }
+
   runtime.stdout(createdRecord.filePath);
   return 0;
 }
