@@ -11,7 +11,8 @@
     "architecture-decision-records"
   ],
   "pi": {
-    "skills": ["./skills"]
+    "skills": ["./skills"],
+    "image": "https://raw.githubusercontent.com/vedang/pi-adr/main/assets/banner.png"
   },
   "scripts": {
     "adr": "bun run skills/adr/scripts/adr.ts",
