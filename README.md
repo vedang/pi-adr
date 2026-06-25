@@ -17,7 +17,7 @@ scripts together in that skill bundle.
 Install from git:
 
 ```bash
-pi install git:github.com/vedang/pi-adr
+pi install git:github.com/unravel-team/pi-adr
 ```
 
 ### Claude Code
@@ -25,14 +25,14 @@ pi install git:github.com/vedang/pi-adr
 Add this repo as a Claude Code plugin marketplace, then install the `adr` plugin:
 
 ```bash
-claude plugin marketplace add vedang/pi-adr
+claude plugin marketplace add unravel-team/pi-adr
 claude plugin install adr@pi-adr
 ```
 
 Or run the same steps inside Claude Code:
 
 ```text
-/plugin marketplace add vedang/pi-adr
+/plugin marketplace add unravel-team/pi-adr
 /plugin install adr@pi-adr
 ```
 

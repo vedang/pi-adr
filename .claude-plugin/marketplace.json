@@ -1,8 +1,8 @@
 {
   "name": "pi-adr",
   "owner": {
-    "name": "Vedang Manerikar",
-    "url": "https://github.com/vedang"
+    "name": "Unravel Team",
+    "url": "https://github.com/unravel-team"
   },
   "metadata": {
     "description": "Architecture Decision Records skill for Claude Code and pi."

@@ -3,9 +3,9 @@
   "version": "0.3.0",
   "description": "Create, review, update, query, and maintain Architecture Decision Records (Nygard format) with a deterministic helper CLI.",
   "author": {
-    "name": "Vedang Manerikar",
-    "url": "https://github.com/vedang"
+    "name": "Unravel Team",
+    "url": "https://github.com/unravel-team"
   },
-  "homepage": "https://github.com/vedang/pi-adr",
+  "homepage": "https://github.com/unravel-team/pi-adr",
   "license": "MIT"
 }
