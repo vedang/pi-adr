@@ -22,14 +22,14 @@ pi install git:github.com/unravel-team/pi-adr
 
 ### Claude Code
 
-Add this repo as a Claude Code plugin marketplace, then install the `adr` plugin:
+From a shell, add this repo as a marketplace and install the `adr` plugin:
 
 ```bash
 claude plugin marketplace add unravel-team/pi-adr
 claude plugin install adr@pi-adr
 ```
 
-Or run the same steps inside Claude Code:
+Inside Claude Code, use the equivalent slash commands:
 
 ```text
 /plugin marketplace add unravel-team/pi-adr

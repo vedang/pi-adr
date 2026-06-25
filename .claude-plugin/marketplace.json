@@ -11,7 +11,7 @@
     {
       "name": "adr",
       "source": "./",
-      "description": "Create and maintain Nygard-style ADRs with supersession tracking and a deterministic helper CLI (requires bun).",
+      "description": "Create and maintain Nygard-style ADRs with supersession tracking and a deterministic helper CLI (requires Bun).",
       "category": "documentation"
     }
   ]
