@@ -12,11 +12,32 @@ scripts together in that skill bundle.
 
 ## Install
 
+### pi
+
 Install from git:
 
 ```bash
 pi install git:github.com/vedang/pi-adr
 ```
+
+### Claude Code
+
+Add this repo as a Claude Code plugin marketplace, then install the `adr` plugin:
+
+```bash
+claude plugin marketplace add vedang/pi-adr
+claude plugin install adr@pi-adr
+```
+
+Or run the same steps inside Claude Code:
+
+```text
+/plugin marketplace add vedang/pi-adr
+/plugin install adr@pi-adr
+```
+
+The plugin exposes the `adr` skill from `skills/adr`. Helper commands require
+[Bun](https://bun.sh/); run `bun --version` to confirm it is available.
 
 ## Use
 
